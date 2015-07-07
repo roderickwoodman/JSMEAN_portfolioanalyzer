@@ -8,24 +8,35 @@
 	<script type="text/javascript">  
 	    $(document).ready(function() {
 
-	 		// var symbolData = [];
+
+	 		// ################################################
+	    	// GLOBAL VARS AND HELPER FUNCTIONS
+
 	 		var database = [];
 
-		    // The event listener for the file upload
-		    document.getElementById('txtFileUpload').addEventListener('change', upload, false);
+            function isFloat (n) {
+            	return (n%1 !== 0);
+            }
+
+
+	 		// ################################################
+	 		// CSV FILE UPLOAD
+
+		    // add file upload event listener
+		    document.getElementById('csvFileUpload').addEventListener('change', upload, false);
 		 
-		    // Method that checks that the browser supports the HTML5 File API
-		    function browserSupportFileUpload() {
+		    // check that the browser supports the HTML5 file API
+		    function browserSupportsFileUpload() {
 		        var isCompatible = false;
 		        if (window.File && window.FileReader && window.FileList && window.Blob) {
-		        isCompatible = true;
+			        isCompatible = true;
 		        }
 		        return isCompatible;
 		    }
 		 
-		    // Method that reads and processes the selected file
+		    // process the selected file
 		    function upload(evt) {
-		    if (!browserSupportFileUpload()) {
+		    if (!browserSupportsFileUpload()) {
 		        alert('The File APIs are not fully supported in this browser!');
 		        } else {
 		            var data = null;
@@ -36,29 +47,16 @@
 		                var csvData = event.target.result;
 		                data = $.csv.toArrays(csvData);
 		                if (data && data.length > 0) {
-		                    // alert('Imported -' + data.length + '- rows successfully!');
-		                    var newSymbols = extractPositionsFromFileData(data);
-		                    for (var n=0; n<newSymbols.length; n++) {
-		                    	console.log("newSymbols["+n+"]: "+newSymbols[n]);
-		                    	var newQty = (isFloat(newSymbols[n][1])) ? parseFloat(newSymbols[n][1]) : parseInt(newSymbols[n][1]);
-	                    		if (database.length == 0) {
-	                    			database.push(new Array(newSymbols[n][0], newQty));              	
-	                    		}
-	                    		else {
-			                    	for (var d=0; d<database.length; d++) {
-			                    		if (database[d][0] == newSymbols[n][0]) {
-					                    	var currQty = (isFloat(database[d][1])) ? parseFloat(database[d][1]) : parseInt(database[d][1]);
-			                    			database[d][1] = currQty + newQty;
-			                    			break;
-			                    		}
-			                    		else if (d == database.length - 1) {
-			                    			database.push(new Array(newSymbols[n][0], newQty));       
-					                    	break;
-			                    		}
-			                    	}
-	                    		}
-		                    }
-		                    updateDatabaseHtml();
+		                    //console.log('Imported -' + data.length + '- rows successfully!');
+
+		                    // parse data
+		                    var newSymbols = parseFileDataForPositionData(data);
+
+		                    // update database
+		                    updateDatabase(newSymbols);
+
+		                    // update view
+		                    updatePortfolioView();
 
 		                } else {
 		                    alert('No data to import!');
@@ -70,7 +68,8 @@
 		        }
 		    }
 
-		    function extractPositionsFromFileData(fileData) {
+		    // extract the position data from the file
+		    function parseFileDataForPositionData(fileData) {
 		    	var matchResults = [];
 		    	var foundFirstSymbol = false;
 		    	var thisIsFirstSymbol = false;
@@ -117,24 +116,38 @@
 		    	return matchResults;
 		    }
 
-		    function updateDatabaseHtml () {
-		    	// console.log("current database...");
+		    // update the database (FIXME: currently the DB is in the browser and is not persistent)
+		    function updateDatabase (newSymbols) {
+                for (var n=0; n<newSymbols.length; n++) {
+                	// console.log("newSymbols["+n+"]: "+newSymbols[n]);
+                	var newQty = (isFloat(newSymbols[n][1])) ? parseFloat(newSymbols[n][1]) : parseInt(newSymbols[n][1]);
+            		if (database.length == 0) {
+            			database.push(new Array(newSymbols[n][0], newQty));              	
+            		}
+            		else {
+                    	for (var d=0; d<database.length; d++) {
+                    		if (database[d][0] == newSymbols[n][0]) {
+		                    	var currQty = (isFloat(database[d][1])) ? parseFloat(database[d][1]) : parseInt(database[d][1]);
+                    			database[d][1] = currQty + newQty;
+                    			break;
+                    		}
+                    		else if (d == database.length - 1) {
+                    			database.push(new Array(newSymbols[n][0], newQty));       
+		                    	break;
+                    		}
+                    	}
+            		}
+                }
+		    }
+
+		    // update the view to match the database (FIXME: currently the DB is in the browser and is not persistent)
+		    function updatePortfolioView () {
                 $('#allData').html("");
                 for (var n=0; n<database.length; n++) {
                 	// console.log("database["+n+"]: "+database[n]);
                     $('#allData').append("<tr><td>"+database[n][0]+"</td><td>"+database[n][1]+"</td><td></td><td></td></tr>");
                 }
             }
-
-            function isFloat (n) {
-            	return (n%1 !== 0);
-            }
-
-			function dbgPrintArray (arr) {
-		    	for (var k=0; k<arr.length; k++) {
-			    	console.log("["+k+"]: "+arr[k]);
-			    }			
-			}
 
 		});
 	</script>
@@ -143,7 +156,7 @@
 	<div id="dvImportSegments" class="fileupload ">
 	    <fieldset>
 	        <legend>Upload your CSV File</legend>
-	            <input type="file" name="File Upload" id="txtFileUpload" accept=".csv" />
+	            <input type="file" name="File Upload" id="csvFileUpload" accept=".csv" />
 	   	</fieldset>
 	</div>
 	<table>
