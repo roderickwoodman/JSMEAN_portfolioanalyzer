@@ -40,20 +40,23 @@
 
 		                    var newSymbols = extractPositionsFromFileData(data);
 		                    for (var n=0; n<newSymbols.length; n++) {
-		                    	console.log("newSymbols["+n+"]: "+newSymbols[n]);
+		                    	// console.log("newSymbols["+n+"]: "+newSymbols[n]);
 	                    		if (database.length == 0) {
-			                    	database.push(newSymbols[n]);
+	                    			database.push(new Array(newSymbols[n][0], parseInt(newSymbols[n][1])));                    	
 	                    		}
-		                    	for (var d=0; d<database.length; d++) {
-			                    	// console.log("database["+d+"]: "+database[d]);
-		                    		if (database[d][0] == newSymbols[n][0]) {
-		                    			database[d][1] = parseInt(database[d][1]) + parseInt(newSymbols[n][1]);
-		                    			break;
-		                    		}
-		                    		if (d == database.length - 1) {
-				                    	database.push(newSymbols[n]);
-		                    		}
-		                    	}
+	                    		else {
+			                    	for (var d=0; d<database.length; d++) {
+			                    		if (database[d][0] == newSymbols[n][0]) {
+			                    			console.log("DBmod: "+newSymbols[n][1]+" "+database[d][1]);
+			                    			database[d][1] = parseInt(database[d][1]) + parseInt(newSymbols[n][1]);
+			                    			break;
+			                    		}
+			                    		else if (d == database.length - 1) {
+			                    			database.push(new Array(newSymbols[n][0], parseInt(newSymbols[n][1])));     
+					                    	break;
+			                    		}
+			                    	}
+	                    		}
 		                    }
 		                    updateDatabaseHtml();
 
@@ -94,7 +97,6 @@
 			    			symbolToAdd = [];
 				    		if (thisIsFirstSymbol == true) {
 				    			thisIsFirstSymbol = false;
-			    				// console.log("adding: "+fileData[i][0]+" "+fileData[i][q]);
 				    			matchResults.push(new Array(fileData[i][0], fileData[i][q]));
 				    		}
 				    		else {
@@ -106,7 +108,6 @@
 				    				}
 				    			}
 				    			if (anotherValidSymbol == true) {
-				    				// console.log("adding: "+fileData[i][0]+" "+fileData[i][q]);
 					    			matchResults.push(new Array(fileData[i][0], fileData[i][q]));
 								}
 				    		}
@@ -124,6 +125,7 @@
                     $('#allData').append("<tr><td>"+database[n][0]+"</td><td>"+database[n][1]+"</td><td></td><td></td></tr>");
                 }
             }
+
 
 			function dbgPrintArray (arr) {
 		    	for (var k=0; k<arr.length; k++) {
