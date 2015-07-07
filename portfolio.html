@@ -37,22 +37,22 @@
 		                data = $.csv.toArrays(csvData);
 		                if (data && data.length > 0) {
 		                    // alert('Imported -' + data.length + '- rows successfully!');
-
 		                    var newSymbols = extractPositionsFromFileData(data);
 		                    for (var n=0; n<newSymbols.length; n++) {
-		                    	// console.log("newSymbols["+n+"]: "+newSymbols[n]);
+		                    	console.log("newSymbols["+n+"]: "+newSymbols[n]);
+		                    	var newQty = (isFloat(newSymbols[n][1])) ? parseFloat(newSymbols[n][1]) : parseInt(newSymbols[n][1]);
 	                    		if (database.length == 0) {
-	                    			database.push(new Array(newSymbols[n][0], parseInt(newSymbols[n][1])));                    	
+	                    			database.push(new Array(newSymbols[n][0], newQty));              	
 	                    		}
 	                    		else {
 			                    	for (var d=0; d<database.length; d++) {
 			                    		if (database[d][0] == newSymbols[n][0]) {
-			                    			console.log("DBmod: "+newSymbols[n][1]+" "+database[d][1]);
-			                    			database[d][1] = parseInt(database[d][1]) + parseInt(newSymbols[n][1]);
+					                    	var currQty = (isFloat(database[d][1])) ? parseFloat(database[d][1]) : parseInt(database[d][1]);
+			                    			database[d][1] = currQty + newQty;
 			                    			break;
 			                    		}
 			                    		else if (d == database.length - 1) {
-			                    			database.push(new Array(newSymbols[n][0], parseInt(newSymbols[n][1])));     
+			                    			database.push(new Array(newSymbols[n][0], newQty));       
 					                    	break;
 			                    		}
 			                    	}
@@ -126,6 +126,9 @@
                 }
             }
 
+            function isFloat (n) {
+            	return (n%1 !== 0);
+            }
 
 			function dbgPrintArray (arr) {
 		    	for (var k=0; k<arr.length; k++) {
