@@ -20,7 +20,7 @@
 
 
 	 		// ################################################
-	 		// CSV FILE UPLOAD
+	 		// INPUT FROM CSV FILE
 
 		    // add file upload event listener
 		    document.getElementById('csvFileUpload').addEventListener('change', upload, false);
@@ -36,8 +36,10 @@
 		 
 		    // process the selected file
 		    function upload(evt) {
-		    if (!browserSupportsFileUpload()) {
-		        alert('The File APIs are not fully supported in this browser!');
+				$('#man_symbol').val("");
+				$('#man_qty').val("");
+			    if (!browserSupportsFileUpload()) {
+			        alert('The File APIs are not fully supported in this browser!');
 		        } else {
 		            var data = null;
 		            var file = evt.target.files[0];
@@ -49,7 +51,7 @@
 		                if (data && data.length > 0) {
 		                    //console.log('Imported -' + data.length + '- rows successfully!');
 
-		                    // parse data
+		                    // parse data for positions
 		                    var newSymbols = parseFileDataForPositionData(data);
 
 		                    // update database
@@ -149,14 +151,36 @@
                 }
             }
 
+
+	 		// ################################################
+	 		// MANUAL INPUT
+
+            $('form').submit(function(){
+            	manualInput = [];
+				manualInput.push(Array($('#man_symbol').val().toUpperCase(), $('#man_qty').val()));
+				updateDatabase(manualInput);
+                updatePortfolioView();
+                return false;
+            });
+
 		});
 	</script>
 </head>
 <body>
 	<div id="dvImportSegments" class="fileupload ">
 	    <fieldset>
-	        <legend>Upload your CSV File</legend>
+	        <legend>Upload your CSV file</legend>
 	            <input type="file" name="File Upload" id="csvFileUpload" accept=".csv" />
+	   	</fieldset>
+	    <fieldset>
+	        <legend>Manually enter each position</legend>
+	    	<form>
+	            <label for="symbol">Symbol:</label>
+	            <input type="text" id="man_symbol" name="symbol">
+	            <label for="qty">Qty:</label>
+	            <input type="text" id="man_qty" name="qty">
+	            <input type="submit" value="add">
+	        </form>
 	   	</fieldset>
 	</div>
 	<table>
