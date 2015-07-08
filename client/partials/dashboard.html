@@ -1,4 +1,33 @@
-<!-- <div ng-controller="DashboardController"> -->
-<div>
+<div ng-controller="DashboardController">
 	<h5>(dashboard partial here)</h5>
+	
+	<div id="dvImportSegments" class="fileupload ">
+	    <fieldset>
+	        <legend>Upload your CSV file</legend>
+	            <input type="file" name="File Upload" id="csvFileUpload" accept=".csv" />
+	   	</fieldset>
+	    <fieldset>
+	        <legend>Manually enter each position</legend>
+	    	<form>
+	            <label for="symbol">Symbol:</label>
+	            <input type="text" id="man_symbol" name="symbol">
+	            <label for="qty">Qty:</label>
+	            <input type="text" id="man_qty" name="qty">
+	            <input type="submit" value="add">
+	        </form>
+	   	</fieldset>
+	</div>
+	<table>
+		<thead>
+			<tr>
+				<th>Symbol</th>
+				<th>Qty</th>
+				<th>Quote</th>
+				<th>Value</th>
+				<th>ValuePct</th>
+			</tr>
+		</thead>
+		<tbody id="allData">
+		</tbody>
+	</table>
 </div>
