@@ -13,14 +13,78 @@
 	    	// GLOBAL VARS AND HELPER FUNCTIONS
 
 	 		var database = [];
+	 		var totalValue = 0;
 
             function isFloat (n) {
             	return (n%1 !== 0);
             }
 
+            function getQuote (symbol) {
+
+            	// var quote = 
+            	// http://query.yahooapis.com/v1/public/yql?q=select%20*%20from%20yahoo.finance.quotes
+
+				// $.get(
+				// 	'http://finance.yahoo.com/webservice/v1/symbols/GOOG/quote?format=json', 
+				// 	function(data) {
+				// 		console.log(data);
+				// 	}, 
+				// 	'json');
+
+				return 42;
+
+            }
+
+		    // aggregate the new input portfolio data with the existing data (FIXME: currently the database is in the browser)
+		    function updatePortfolioHoldings (newSymbols) {
+                for (var n=0; n<newSymbols.length; n++) {
+                	// console.log("newSymbols["+n+"]: "+newSymbols[n]);
+                	var newQty = (isFloat(newSymbols[n][1])) ? parseFloat(newSymbols[n][1]) : parseInt(newSymbols[n][1]);
+            		if (database.length == 0) {
+            			database.push(new Array(newSymbols[n][0], newQty, 0, 0));              	
+            		}
+            		else {
+                    	for (var d=0; d<database.length; d++) {
+                    		if (database[d][0] == newSymbols[n][0]) {
+		                    	var currQty = (isFloat(database[d][1])) ? parseFloat(database[d][1]) : parseInt(database[d][1]);
+                    			database[d][1] = currQty + newQty;
+                    			break;
+                    		}
+                    		else if (d == database.length - 1) {
+                    			database.push(new Array(newSymbols[n][0], newQty, 0, 0));       
+		                    	break;
+                    		}
+                    	}
+            		}
+                }
+		    }
+
+		    // update the value of the holdings based on current stock quotes
+		    function updatePortfolioValue () {
+                $('#allData').html("");
+                totalValue = 0;
+                for (var n=0; n<database.length; n++) {
+                	database[n][2] = getQuote(database[n][0]);
+	            	database[n][3] = parseFloat(database[n][1]) * parseFloat(database[n][2]);
+	            	totalValue += database[n][3];
+                }
+                for (n=0; n<database.length; n++) {
+                	database[n][4] = (parseFloat(database[n][3]) / totalValue) * 100;
+                }
+            }
+
+		    // update the view
+		    function updatePortfolioView () {
+                $('#allData').html("");
+                for (var n=0; n<database.length; n++) {
+                    $('#allData').append("<tr><td>"+database[n][0]+"</td><td>"+database[n][1]+"</td><td>$"+database[n][2].toFixed(2)+"</td><td>$"+database[n][3].toFixed(2)+"</td><td>"+database[n][4].toFixed(1)+"%</td></tr>");
+                }
+                $('#allData').append("<tr><td></td><td></td><th>TOTAL:</th><th>$"+totalValue.toFixed(2)+"</th><th>100%</th></tr>");
+            }
+
 
 	 		// ################################################
-	 		// INPUT FROM CSV FILE
+	 		// PORTFOLIO INPUT FROM CSV FILE
 
 		    // add file upload event listener
 		    document.getElementById('csvFileUpload').addEventListener('change', upload, false);
@@ -50,16 +114,10 @@
 		                data = $.csv.toArrays(csvData);
 		                if (data && data.length > 0) {
 		                    //console.log('Imported -' + data.length + '- rows successfully!');
-
-		                    // parse data for positions
 		                    var newSymbols = parseFileDataForPositionData(data);
-
-		                    // update database
-		                    updateDatabase(newSymbols);
-
-		                    // update view
+		                    updatePortfolioHoldings(newSymbols);
+		                    updatePortfolioValue();
 		                    updatePortfolioView();
-
 		                } else {
 		                    alert('No data to import!');
 		                }
@@ -118,47 +176,15 @@
 		    	return matchResults;
 		    }
 
-		    // update the database (FIXME: currently the DB is in the browser and is not persistent)
-		    function updateDatabase (newSymbols) {
-                for (var n=0; n<newSymbols.length; n++) {
-                	// console.log("newSymbols["+n+"]: "+newSymbols[n]);
-                	var newQty = (isFloat(newSymbols[n][1])) ? parseFloat(newSymbols[n][1]) : parseInt(newSymbols[n][1]);
-            		if (database.length == 0) {
-            			database.push(new Array(newSymbols[n][0], newQty));              	
-            		}
-            		else {
-                    	for (var d=0; d<database.length; d++) {
-                    		if (database[d][0] == newSymbols[n][0]) {
-		                    	var currQty = (isFloat(database[d][1])) ? parseFloat(database[d][1]) : parseInt(database[d][1]);
-                    			database[d][1] = currQty + newQty;
-                    			break;
-                    		}
-                    		else if (d == database.length - 1) {
-                    			database.push(new Array(newSymbols[n][0], newQty));       
-		                    	break;
-                    		}
-                    	}
-            		}
-                }
-		    }
-
-		    // update the view to match the database (FIXME: currently the DB is in the browser and is not persistent)
-		    function updatePortfolioView () {
-                $('#allData').html("");
-                for (var n=0; n<database.length; n++) {
-                	// console.log("database["+n+"]: "+database[n]);
-                    $('#allData').append("<tr><td>"+database[n][0]+"</td><td>"+database[n][1]+"</td><td></td><td></td></tr>");
-                }
-            }
-
 
 	 		// ################################################
-	 		// MANUAL INPUT
+	 		// PORTFOLIO INPUT MANUALLY
 
             $('form').submit(function(){
             	manualInput = [];
 				manualInput.push(Array($('#man_symbol').val().toUpperCase(), $('#man_qty').val()));
-				updateDatabase(manualInput);
+				updatePortfolioHoldings(manualInput);
+                updatePortfolioValue();
                 updatePortfolioView();
                 return false;
             });
@@ -190,6 +216,7 @@
 				<th>Qty</th>
 				<th>Quote</th>
 				<th>Value</th>
+				<th>ValuePct</th>
 			</tr>
 		</thead>
 		<tbody id="allData">
