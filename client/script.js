@@ -1,4 +1,22 @@
-my_app.controller('DashboardController', function($scope) {
+my_app.factory('DataFactory', function($http) {
+
+    var factory = {};
+    factory.positions = [];
+
+    // factory.getQuotes = function(callback) {
+    //     console.log("GET [dashboard.js - F] need to get tests");
+    //     $http.get('/getTests').success(function(output) {
+    //         tests = output;
+    //         console.log("GET [dashboard.js - F] success, output tests: ",output);
+    //         callback(tests);
+    //     });
+    // };
+
+   return factory;
+
+});
+
+my_app.controller('DashboardController', function($scope, DataFactory) {
 
     console.log("<<< DASHBOARD PAGE LOAD >>>");
 
@@ -173,14 +191,32 @@ my_app.controller('DashboardController', function($scope) {
 	// ################################################
 	// PORTFOLIO INPUT MANUALLY
 
-    $('form').submit(function(){
-    	manualInput = [];
-		manualInput.push(Array($('#man_symbol').val().toUpperCase(), $('#man_qty').val()));
-		updatePortfolioHoldings(manualInput);
-        updatePortfolioValue();
-        updatePortfolioView();
-        return false;
-    });
+  //   $('form').submit(function(){
+  //   	manualInput = [];
+		// manualInput.push(Array($('#man_symbol').val().toUpperCase(), $('#man_qty').val()));
+		// updatePortfolioHoldings(manualInput);
+  //       updatePortfolioValue();
+  //       updatePortfolioView();
+  //       return false;
+  //   });
+
+    $scope.addPositionManually = function(info, callback) {
+	    console.log("<<< ADD POSITION MANUALLY CLICK >>>");
+	    // console.log(info);
+	    // console.log($scope.newManualPosition);
+        newPosition = {symbol: $scope.newManualPosition.symbol, qty: $scope.newManualPosition.qty};
+        DataFactory.positions.push(newPosition);
+        $scope.positions = DataFactory.positions;
+	    console.log("ADD [DashboardController.addPositionManually()] added position",newPosition);
+        console.log("DataFactory.positions: ",DataFactory.positions);//.push(newPosition);
+
+	    // console.log("ADD [DashboardController.addPositionManually()] need to add position",$scope.newManualPosition);
+     //    DataFactory.addPosition($scope.newPositionManually, function() {
+     //        console.log("ADD [DashboardController.addPositionManually()] success, redirect to dashboard");
+     //        $scope.newManualPosition = {};
+     //        $location.path('/dashboard');
+	    // });
+	};
 
 });
 

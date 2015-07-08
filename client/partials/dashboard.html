@@ -1,19 +1,20 @@
-<div ng-controller="DashboardController">
-	<h5>(dashboard partial here)</h5>
-	
+<div ng-controller="DashboardController">	
 	<div id="dvImportSegments" class="fileupload ">
 	    <fieldset>
 	        <legend>Upload your CSV file</legend>
+	    	<form>
 	            <input type="file" name="File Upload" id="csvFileUpload" accept=".csv" />
+	    	</form>
 	   	</fieldset>
 	    <fieldset>
 	        <legend>Manually enter each position</legend>
 	    	<form>
 	            <label for="symbol">Symbol:</label>
-	            <input type="text" id="man_symbol" name="symbol">
+	            <input type="text" id="man_symbol" name="symbol" ng-model="newManualPosition.symbol">
 	            <label for="qty">Qty:</label>
-	            <input type="text" id="man_qty" name="qty">
-	            <input type="submit" value="add">
+	            <input type="text" id="man_qty" name="qty" ng-model= "newManualPosition.qty">
+	            <!-- <input type="submit" value="add"> -->
+				<input type="submit" value="add position" ng-click="addPositionManually()"></input>
 	        </form>
 	   	</fieldset>
 	</div>
@@ -28,6 +29,13 @@
 			</tr>
 		</thead>
 		<tbody id="allData">
+			<tr ng-repeat="position in positions">
+				<td>{{position.symbol}}</td>
+				<td>{{position.qty}}</td>
+				<td>{{position.quote}}</td>
+				<td>{{position.value}}</td>
+				<td>{{position.valuePct}}</td>
+			</tr>
 		</tbody>
 	</table>
 </div>
