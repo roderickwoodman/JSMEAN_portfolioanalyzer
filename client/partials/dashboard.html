@@ -32,9 +32,16 @@
 			<tr ng-repeat="position in positions">
 				<td>{{position.symbol}}</td>
 				<td>{{position.qty}}</td>
-				<td>{{position.quote}}</td>
-				<td>{{position.value}}</td>
-				<td>{{position.valuePct}}</td>
+				<td>${{position.quote}}</td>
+				<td>${{position.value}}</td>
+				<td>{{position.valuePct}}%</td>
+			</tr>
+			<tr>
+				<td></td>
+				<td></td>
+				<th>TOTAL:</th>
+				<th>${{getTotal()}}</th>
+				<th>100%</th>
 			</tr>
 		</tbody>
 	</table>

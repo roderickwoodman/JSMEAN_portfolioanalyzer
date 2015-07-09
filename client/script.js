@@ -2,16 +2,65 @@ my_app.factory('DataFactory', function($http) {
 
     var factory = {};
     positions = [];
+    totalValue = 0;
+
+    function updateTotalValue () {
+
+		totalValue = 0;
+		if (positions.length != 0) {
+			for (var i=0; i<positions.length; i++) {
+				totalValue += parseFloat(positions[i].value);
+				// console.log("[i="+i+"] totalValue="+totalValue);
+			}
+		}
+		totalValue = totalValue.toFixed(2);
+    }
+
+    function updateValuesForAllPositions () {
+    	if (positions.length == 0) {
+	    	updateTotalValue();
+    	}
+    	else {
+	        for (var p=0; p<positions.length; p++) {
+		    	positions[p].quote = (1).toFixed(2);
+		    	positions[p].value = (parseFloat(positions[p].quote) * parseFloat(positions[p].qty)).toFixed(2);
+		    }
+	    	updateTotalValue();
+	        for (p=0; p<positions.length; p++) {	    	
+		    	positions[p].valuePct = ((parseFloat(positions[p].value) / totalValue) * 100).toFixed(1);
+		    }
+		}
+    }
+
+    factory.getTotalValue = function() {
+		return totalValue;
+    }
+
+    factory.getPositions = function() {
+    	return positions;
+    }
 
     factory.addPosition = function(info, callback) {
-        newPosition = {symbol: info.symbol, qty: info.qty};
-        positions.push(newPosition);
-        console.log("ADD [DataFactory.addPosition()] need to add position: ", newPosition);
+        var symbolExists = false;
+        for (var p=0; p<positions.length; p++) {
+        	if (positions[p].symbol == info.symbol) {
+        		symbolExists = true;
+        		positions[p].qty = parseFloat(positions[p].qty) + parseFloat(info.qty);
+		        console.log("ADD [DataFactory.addPosition()] updated position: ", positions[p].symbol);
+        		break;
+        	}
+        }
+        if (symbolExists == false) {
+	        newPosition = {symbol: info.symbol, qty: info.qty};
+	        positions.push(newPosition);
+	        console.log("ADD [DataFactory.addPosition()] added position: ", newPosition);
+        }
+		updateValuesForAllPositions();
 		callback(positions);
     };
 
    return factory;
-
+   
 });
 
 my_app.controller('DashboardController', function($scope, DataFactory) {
@@ -23,6 +72,8 @@ my_app.controller('DashboardController', function($scope, DataFactory) {
 
 	var database = [];
 	var totalValue = 0;
+
+	$scope.positions = DataFactory.getPositions();
 
     function isFloat (n) {
     	return (n%1 !== 0);
@@ -189,19 +240,10 @@ my_app.controller('DashboardController', function($scope, DataFactory) {
 	// ################################################
 	// PORTFOLIO INPUT MANUALLY
 
-  //   $('form').submit(function(){
-  //   	manualInput = [];
-		// manualInput.push(Array($('#man_symbol').val().toUpperCase(), $('#man_qty').val()));
-		// updatePortfolioHoldings(manualInput);
-  //       updatePortfolioValue();
-  //       updatePortfolioView();
-  //       return false;
-  //   });
-
     $scope.addPositionManually = function() {
 
 	    console.log("<<< ADD POSITION MANUALLY CLICK >>>");
-	    
+
 	    console.log("ADD [DashboardController.addPositionManually()] need to add position",$scope.newManualPosition);
         DataFactory.addPosition($scope.newManualPosition, function(factoryPositions) {
             console.log("ADD [DashboardController.addPositionManually()] success");
@@ -209,6 +251,10 @@ my_app.controller('DashboardController', function($scope, DataFactory) {
             $scope.newManualPosition = {};
 	    });
 	};
+
+	$scope.getTotal = function() {
+		return DataFactory.getTotalValue();
+	}
 
 });
 
