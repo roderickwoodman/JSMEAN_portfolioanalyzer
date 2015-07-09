@@ -10,12 +10,17 @@ my_app.factory('DataFactory', function($http) {
     	var quote = 0;
         console.log("QUO [DataFactory.getQuote()] need to get a quote: ", symbolToQuote);
         $http.post('/getQuote', symbolToQuote).success(function(output) {
-	        console.log("QUO [DataFactory.getQuote()] success, returning "+output.lastTradePriceOnly); //, "+symbol+" @ $"+output.lastTradePriceOnly);
-	        positions[positionIndex].quote = output.lastTradePriceOnly;
-	        positions[positionIndex].name = output.name;
-    		updateValuesForAllPositions();
+        	if (output.error != null) {
+        		console.log("QUO [DataFactory.getQuote()] ERROR: ", output.error);
+        		positions.splice(positionIndex,1);
+        	}
+        	else {
+		        console.log("QUO [DataFactory.getQuote()] success, returning "+output.lastTradePriceOnly); //, "+symbol+" @ $"+output.lastTradePriceOnly);
+		        positions[positionIndex].quote = output.lastTradePriceOnly;
+		        positions[positionIndex].name = output.name;
+	    		updateValuesForAllPositions();
+	    	}
         });
-    	// return quote;
     }
 
     function updateTotalValue () {
@@ -61,7 +66,7 @@ my_app.factory('DataFactory', function($http) {
         		symbolExists = true;
         		positionIndexModified = p;
         		positions[p].qty = parseFloat(positions[p].qty) + parseFloat(info.qty);
-		        console.log("ADD [DataFactory.addPosition()] updated position and quote: "+positions[p].symbol+"@"+positions[p].quote);
+		        console.log("ADD [DataFactory.addPosition()] updated position: "+positions[p].symbol);
         		break;
         	}
         }

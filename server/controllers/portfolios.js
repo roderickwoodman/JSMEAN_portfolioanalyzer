@@ -38,12 +38,17 @@ module.exports = (function() {
 					// [dividendYield]: 1.7
 					// [peRatio]: 14.92
 				}, 
-				function (error, results) {
-					if (error != null) {
-	                    console.log("QUO [portfolios.js] error: ",error);
+				function (apiError, apiResults) {
+					if (apiError != null) {
+	                    console.log("QUO [portfolios.js] API ERROR: ", apiError);
+	                    res.json({error: apiError});
+					} else if (apiResults.name == null) {
+						var appError = "ticker symbol was not found";
+	                    console.log("QUO [portfolios.js] APP ERROR: ", appError);
+	                    res.json({error: appError})
 					} else {
-						console.log("QUO [portfolios.js] success, grabbed: ",results);
-	                    res.json(results);
+						console.log("QUO [portfolios.js] success, grabbed: ",apiResults.symbol);
+	                    res.json(apiResults);
 					}
 				}
 			);
