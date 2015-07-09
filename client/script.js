@@ -4,12 +4,25 @@ my_app.factory('DataFactory', function($http) {
     positions = [];
     totalValue = 0;
 
+
+    function getQuote (symbol) {
+
+    	var needQuote = {symbol: symbol};
+        console.log("QUO [DataFactory.getQuote()] need to get a quote: ", needQuote);
+        $http.post('/getQuote', needQuote).success(function(output) {
+	        console.log("QUO [DataFactory.getQuote()] success, "+symbol+"="+output);
+
+        });
+        console.log("QUO [DataFactory.getQuote()] FIXME... returning hardcoded quote for "+symbol);
+    	return 1;
+    }
+
     function updateTotalValue () {
 
 		totalValue = 0;
 		if (positions.length != 0) {
-			for (var i=0; i<positions.length; i++) {
-				totalValue += parseFloat(positions[i].value);
+			for (var p=0; p<positions.length; p++) {
+				totalValue += parseFloat(positions[p].value);
 				// console.log("[i="+i+"] totalValue="+totalValue);
 			}
 		}
@@ -22,7 +35,6 @@ my_app.factory('DataFactory', function($http) {
     	}
     	else {
 	        for (var p=0; p<positions.length; p++) {
-		    	positions[p].quote = (1).toFixed(2);
 		    	positions[p].value = (parseFloat(positions[p].quote) * parseFloat(positions[p].qty)).toFixed(2);
 		    }
 	    	updateTotalValue();
@@ -41,17 +53,19 @@ my_app.factory('DataFactory', function($http) {
     }
 
     factory.addPosition = function(info, callback) {
+     	var quote = getQuote(info.symbol);
         var symbolExists = false;
         for (var p=0; p<positions.length; p++) {
         	if (positions[p].symbol == info.symbol) {
         		symbolExists = true;
         		positions[p].qty = parseFloat(positions[p].qty) + parseFloat(info.qty);
-		        console.log("ADD [DataFactory.addPosition()] updated position: ", positions[p].symbol);
+        		positions[p].quote = quote;
+		        console.log("ADD [DataFactory.addPosition()] updated position and quote: "+positions[p].symbol+"@"+positions[p].quote);
         		break;
         	}
         }
         if (symbolExists == false) {
-	        newPosition = {symbol: info.symbol, qty: info.qty};
+	        newPosition = {symbol: info.symbol, qty: info.qty, quote: quote};
 	        positions.push(newPosition);
 	        console.log("ADD [DataFactory.addPosition()] added position: ", newPosition);
         }
@@ -60,7 +74,7 @@ my_app.factory('DataFactory', function($http) {
     };
 
    return factory;
-   
+
 });
 
 my_app.controller('DashboardController', function($scope, DataFactory) {
@@ -70,8 +84,8 @@ my_app.controller('DashboardController', function($scope, DataFactory) {
 	// ################################################
 	// GLOBAL VARS AND HELPER FUNCTIONS
 
-	var database = [];
-	var totalValue = 0;
+	// var database = [];
+	// var totalValue = 0;
 
 	$scope.positions = DataFactory.getPositions();
 
@@ -79,68 +93,52 @@ my_app.controller('DashboardController', function($scope, DataFactory) {
     	return (n%1 !== 0);
     }
 
-    function getQuote (symbol) {
+    // // aggregate the new input portfolio data with the existing data (FIXME: currently the database is in the browser)
+    // function updatePortfolioHoldings (newSymbols) {
+    //     for (var n=0; n<newSymbols.length; n++) {
+    //     	// console.log("newSymbols["+n+"]: "+newSymbols[n]);
+    //     	var newQty = (isFloat(newSymbols[n][1])) ? parseFloat(newSymbols[n][1]) : parseInt(newSymbols[n][1]);
+    // 		if (database.length == 0) {
+    // 			database.push(new Array(newSymbols[n][0], newQty, 0, 0));              	
+    // 		}
+    // 		else {
+    //         	for (var d=0; d<database.length; d++) {
+    //         		if (database[d][0] == newSymbols[n][0]) {
+    //                 	var currQty = (isFloat(database[d][1])) ? parseFloat(database[d][1]) : parseInt(database[d][1]);
+    //         			database[d][1] = currQty + newQty;
+    //         			break;
+    //         		}
+    //         		else if (d == database.length - 1) {
+    //         			database.push(new Array(newSymbols[n][0], newQty, 0, 0));       
+    //                 	break;
+    //         		}
+    //         	}
+    // 		}
+    //     }
+    // }
 
-    	// var quote = 
-    	// http://query.yahooapis.com/v1/public/yql?q=select%20*%20from%20yahoo.finance.quotes
+    // // update the value of the holdings based on current stock quotes
+    // function updatePortfolioValue () {
+    //     $('#allData').html("");
+    //     totalValue = 0;
+    //     for (var n=0; n<database.length; n++) {
+    //     	database[n][2] = getQuote(database[n][0]);
+    //     	database[n][3] = parseFloat(database[n][1]) * parseFloat(database[n][2]);
+    //     	totalValue += database[n][3];
+    //     }
+    //     for (n=0; n<database.length; n++) {
+    //     	database[n][4] = (parseFloat(database[n][3]) / totalValue) * 100;
+    //     }
+    // }
 
-		$.get(
-			'http://finance.yahoo.com/webservice/v1/symbols/GOOG/quote?format=json', 
-			function(data) {
-				console.log(data);
-			}, 
-			'json');
-
-		return 42;
-
-    }
-
-    // aggregate the new input portfolio data with the existing data (FIXME: currently the database is in the browser)
-    function updatePortfolioHoldings (newSymbols) {
-        for (var n=0; n<newSymbols.length; n++) {
-        	// console.log("newSymbols["+n+"]: "+newSymbols[n]);
-        	var newQty = (isFloat(newSymbols[n][1])) ? parseFloat(newSymbols[n][1]) : parseInt(newSymbols[n][1]);
-    		if (database.length == 0) {
-    			database.push(new Array(newSymbols[n][0], newQty, 0, 0));              	
-    		}
-    		else {
-            	for (var d=0; d<database.length; d++) {
-            		if (database[d][0] == newSymbols[n][0]) {
-                    	var currQty = (isFloat(database[d][1])) ? parseFloat(database[d][1]) : parseInt(database[d][1]);
-            			database[d][1] = currQty + newQty;
-            			break;
-            		}
-            		else if (d == database.length - 1) {
-            			database.push(new Array(newSymbols[n][0], newQty, 0, 0));       
-                    	break;
-            		}
-            	}
-    		}
-        }
-    }
-
-    // update the value of the holdings based on current stock quotes
-    function updatePortfolioValue () {
-        $('#allData').html("");
-        totalValue = 0;
-        for (var n=0; n<database.length; n++) {
-        	database[n][2] = getQuote(database[n][0]);
-        	database[n][3] = parseFloat(database[n][1]) * parseFloat(database[n][2]);
-        	totalValue += database[n][3];
-        }
-        for (n=0; n<database.length; n++) {
-        	database[n][4] = (parseFloat(database[n][3]) / totalValue) * 100;
-        }
-    }
-
-    // update the view
-    function updatePortfolioView () {
-        $('#allData').html("");
-        for (var n=0; n<database.length; n++) {
-            $('#allData').append("<tr><td>"+database[n][0]+"</td><td>"+database[n][1]+"</td><td>$"+database[n][2].toFixed(2)+"</td><td>$"+database[n][3].toFixed(2)+"</td><td>"+database[n][4].toFixed(1)+"%</td></tr>");
-        }
-        $('#allData').append("<tr><td></td><td></td><th>TOTAL:</th><th>$"+totalValue.toFixed(2)+"</th><th>100%</th></tr>");
-    }
+    // // update the view
+    // function updatePortfolioView () {
+    //     $('#allData').html("");
+    //     for (var n=0; n<database.length; n++) {
+    //         $('#allData').append("<tr><td>"+database[n][0]+"</td><td>"+database[n][1]+"</td><td>$"+database[n][2].toFixed(2)+"</td><td>$"+database[n][3].toFixed(2)+"</td><td>"+database[n][4].toFixed(1)+"%</td></tr>");
+    //     }
+    //     $('#allData').append("<tr><td></td><td></td><th>TOTAL:</th><th>$"+totalValue.toFixed(2)+"</th><th>100%</th></tr>");
+    // }
 
 
 	// ################################################

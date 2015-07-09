@@ -12,7 +12,7 @@ app.use(bodyParser.json());
 
 app.use(express.static(path.join(__dirname,'./client')));
 
-// require('./server/config/routes.js')(app);
+require('./server/routes.js')(app);
 
 // app.get('/', function (request, response){
 // 	response.render('index');
