@@ -4,17 +4,18 @@ my_app.factory('DataFactory', function($http) {
     positions = [];
     totalValue = 0;
 
+    function updateQuote (positionIndex) {
 
-    function getQuote (symbol) {
-
-    	var needQuote = {symbol: symbol};
-        console.log("QUO [DataFactory.getQuote()] need to get a quote: ", needQuote);
-        $http.post('/getQuote', needQuote).success(function(output) {
-	        console.log("QUO [DataFactory.getQuote()] success, "+symbol+"="+output);
-
+    	var symbolToQuote = {symbol: positions[positionIndex].symbol};
+    	var quote = 0;
+        console.log("QUO [DataFactory.getQuote()] need to get a quote: ", symbolToQuote);
+        $http.post('/getQuote', symbolToQuote).success(function(output) {
+	        console.log("QUO [DataFactory.getQuote()] success, returning "+output.lastTradePriceOnly); //, "+symbol+" @ $"+output.lastTradePriceOnly);
+	        positions[positionIndex].quote = output.lastTradePriceOnly;
+	        positions[positionIndex].name = output.name;
+    		updateValuesForAllPositions();
         });
-        console.log("QUO [DataFactory.getQuote()] FIXME... returning hardcoded quote for "+symbol);
-    	return 1;
+    	// return quote;
     }
 
     function updateTotalValue () {
@@ -23,7 +24,6 @@ my_app.factory('DataFactory', function($http) {
 		if (positions.length != 0) {
 			for (var p=0; p<positions.length; p++) {
 				totalValue += parseFloat(positions[p].value);
-				// console.log("[i="+i+"] totalValue="+totalValue);
 			}
 		}
 		totalValue = totalValue.toFixed(2);
@@ -53,23 +53,26 @@ my_app.factory('DataFactory', function($http) {
     }
 
     factory.addPosition = function(info, callback) {
-     	var quote = getQuote(info.symbol);
+    	var positionIndexModified;
         var symbolExists = false;
+        info.symbol = info.symbol.toUpperCase();
         for (var p=0; p<positions.length; p++) {
         	if (positions[p].symbol == info.symbol) {
         		symbolExists = true;
+        		positionIndexModified = p;
         		positions[p].qty = parseFloat(positions[p].qty) + parseFloat(info.qty);
-        		positions[p].quote = quote;
 		        console.log("ADD [DataFactory.addPosition()] updated position and quote: "+positions[p].symbol+"@"+positions[p].quote);
         		break;
         	}
         }
         if (symbolExists == false) {
-	        newPosition = {symbol: info.symbol, qty: info.qty, quote: quote};
+	        newPosition = {symbol: info.symbol, qty: info.qty};
 	        positions.push(newPosition);
+    		positionIndexModified = positions.length - 1;
 	        console.log("ADD [DataFactory.addPosition()] added position: ", newPosition);
         }
-		updateValuesForAllPositions();
+        updateQuote(positionIndexModified);
+		// updateValuesForAllPositions();
 		callback(positions);
     };
 
