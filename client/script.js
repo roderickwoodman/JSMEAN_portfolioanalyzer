@@ -18,6 +18,7 @@ my_app.factory('DataFactory', function($http) {
 		        console.log("QUO [DataFactory.getQuote()] success, returning "+output.lastTradePriceOnly); //, "+symbol+" @ $"+output.lastTradePriceOnly);
 		        positions[positionIndex].quote = output.lastTradePriceOnly;
 		        positions[positionIndex].name = output.name;
+		        positions[positionIndex].performance = output.percentChangeFrom200DayMovingAverage;
 	    		updateValuesForAllPositions();
 	    	}
         });
@@ -44,7 +45,7 @@ my_app.factory('DataFactory', function($http) {
 		    }
 	    	updateTotalValue();
 	        for (p=0; p<positions.length; p++) {	    	
-		    	positions[p].valuePct = ((parseFloat(positions[p].value) / totalValue) * 100).toFixed(1);
+		    	positions[p].valuePct = parseInt(((parseFloat(positions[p].value) / totalValue) * 100).toFixed(1));
 		    }
 		}
     }
@@ -100,53 +101,6 @@ my_app.controller('DashboardController', function($scope, DataFactory) {
     function isFloat (n) {
     	return (n%1 !== 0);
     }
-
-    // // aggregate the new input portfolio data with the existing data (FIXME: currently the database is in the browser)
-    // function updatePortfolioHoldings (newSymbols) {
-    //     for (var n=0; n<newSymbols.length; n++) {
-    //     	// console.log("newSymbols["+n+"]: "+newSymbols[n]);
-    //     	var newQty = (isFloat(newSymbols[n][1])) ? parseFloat(newSymbols[n][1]) : parseInt(newSymbols[n][1]);
-    // 		if (database.length == 0) {
-    // 			database.push(new Array(newSymbols[n][0], newQty, 0, 0));              	
-    // 		}
-    // 		else {
-    //         	for (var d=0; d<database.length; d++) {
-    //         		if (database[d][0] == newSymbols[n][0]) {
-    //                 	var currQty = (isFloat(database[d][1])) ? parseFloat(database[d][1]) : parseInt(database[d][1]);
-    //         			database[d][1] = currQty + newQty;
-    //         			break;
-    //         		}
-    //         		else if (d == database.length - 1) {
-    //         			database.push(new Array(newSymbols[n][0], newQty, 0, 0));       
-    //                 	break;
-    //         		}
-    //         	}
-    // 		}
-    //     }
-    // }
-
-    // // update the value of the holdings based on current stock quotes
-    // function updatePortfolioValue () {
-    //     $('#allData').html("");
-    //     totalValue = 0;
-    //     for (var n=0; n<database.length; n++) {
-    //     	database[n][2] = getQuote(database[n][0]);
-    //     	database[n][3] = parseFloat(database[n][1]) * parseFloat(database[n][2]);
-    //     	totalValue += database[n][3];
-    //     }
-    //     for (n=0; n<database.length; n++) {
-    //     	database[n][4] = (parseFloat(database[n][3]) / totalValue) * 100;
-    //     }
-    // }
-
-    // // update the view
-    // function updatePortfolioView () {
-    //     $('#allData').html("");
-    //     for (var n=0; n<database.length; n++) {
-    //         $('#allData').append("<tr><td>"+database[n][0]+"</td><td>"+database[n][1]+"</td><td>$"+database[n][2].toFixed(2)+"</td><td>$"+database[n][3].toFixed(2)+"</td><td>"+database[n][4].toFixed(1)+"%</td></tr>");
-    //     }
-    //     $('#allData').append("<tr><td></td><td></td><th>TOTAL:</th><th>$"+totalValue.toFixed(2)+"</th><th>100%</th></tr>");
-    // }
 
 
 	// ################################################

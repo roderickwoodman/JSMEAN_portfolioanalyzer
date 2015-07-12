@@ -21,22 +21,24 @@
 	<table>
 		<thead>
 			<tr>
-				<th>Symbol</th>
 				<th>Name</th>
+				<th>Symbol</th>
 				<th>Qty</th>
 				<th>Quote</th>
 				<th>Value</th>
 				<th>ValuePct</th>
+				<th>Performance</th>
 			</tr>
 		</thead>
 		<tbody id="allData">
 			<tr ng-repeat="position in positions | orderBy:'-valuePct'">
-				<td>{{position.symbol}}</td>
 				<td>{{position.name}}</td>
+				<td>{{position.symbol}}</td>
 				<td>{{position.qty}}</td>
 				<td>${{position.quote}}</td>
 				<td>${{position.value}}</td>
 				<td>{{position.valuePct}}%</td>
+				<td>{{position.performance}}</td>
 			</tr>
 			<tr>
 				<td></td>
@@ -45,6 +47,7 @@
 				<th>TOTAL:</th>
 				<th>${{getTotal()}}</th>
 				<th>100%</th>
+				<td></td>
 			</tr>
 		</tbody>
 	</table>
