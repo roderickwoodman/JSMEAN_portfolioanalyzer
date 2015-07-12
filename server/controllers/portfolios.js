@@ -30,11 +30,11 @@ module.exports = (function() {
 
 			// var util = require('util');
 			// // require('colors');
-			// var SYMBOL = 'AAPL';
+			// var SYMBOL = 'BX';
 			// yahooFinance.historical({
 			//   symbol: SYMBOL,
-			//   from: '2011-01-01',
-			//   to: '2013-01-01',
+			//   from: '2014-07-15',
+			//   to: '2015-07-10',
 			//   period: 'd'
 			// }, function (err, quotes) {
 			//   if (err) { throw err; }
