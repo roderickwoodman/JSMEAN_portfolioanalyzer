@@ -219,7 +219,7 @@
 		}
 		#visualize {
 			width: 400px;
-			height: 200px;
+			/*height: 200px;*/
 		}
 /*		form {
 		  position: absolute;
@@ -270,68 +270,130 @@
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js"></script>
 	<script>
 
+	// Name	Symbol	Qty	Quote	Value	ValuePct	Performance
+	// W.R. Berkley Corporation Common	WRB	250	$56.26	$14065.00	36%	0.1128
+	// Walt Disney Company (The) Commo	DIS	50	$116.44	$5822.00	15%	0.1039
+	// Bristol-Myers Squibb Company Co	BMY	82	$69.27	$5680.14	14%	0.0781
+	// The Blackstone Group L.P. Commo	BX	125	$39.61	$4951.25	12%	0.0109
+	// Allied World Assurance Company	AWH	100.584	$44.6	$4486.05	11%	0.08689999999999999
+	// Dollar General Corporation Comm	DG	45	$79.47	$3576.15	9%	0.0843
+	// TOTAL:	$38580.59	100%
 
-// Name	Symbol	Qty	Quote	Value	ValuePct	Performance
-// W.R. Berkley Corporation Common	WRB	250	$56.26	$14065.00	36%	0.1128
-// Walt Disney Company (The) Commo	DIS	50	$116.44	$5822.00	15%	0.1039
-// Bristol-Myers Squibb Company Co	BMY	82	$69.27	$5680.14	14%	0.0781
-// The Blackstone Group L.P. Commo	BX	125	$39.61	$4951.25	12%	0.0109
-// Allied World Assurance Company	AWH	100.584	$44.6	$4486.05	11%	0.08689999999999999
-// Dollar General Corporation Comm	DG	45	$79.47	$3576.15	9%	0.0843
-// TOTAL:	$38580.59	100%
+	// WRB 0.36 0.1128
+	// DIS 0.15 0.1039
+	// AWH 0.11 0.08689999999999999
+	// DG 0.09	0.0843
+	// BMY 0.14 0.0781
+	// BX 0.12	0.0109
 
-// WRB 0.36 0.1128
-// DIS 0.15 0.1039
-// AWH 0.11 0.08689999999999999
-// DG 0.09	0.0843
-// BMY 0.14 0.0781
-// BX 0.12	0.0109
-
-//HISTORICAL adjClose: 2015-07-10 2014-07-15, 2013-07-15, 2012-07-15
-// WRB 56.259998 44.75884 42.425345 36.445827
-// DIS 116.440002 84.576877 63.936757 45.711112
-// AWH 44.599998 38.795824 30.961047 24.957332
-// DG 79.470001 55.619421 53.650768 54.297044
-// BMY 69.269997 47.526666 42.80052 32.369561
-// BX 39.610001 31.064205 19.683575 10.798957
+	//HISTORICAL adjClose: 2015-07-10 2014-07-15, 2013-07-15, 2012-07-15
+	// WRB 56.259998 44.75884 42.425345 36.445827
+	// DIS 116.440002 84.576877 63.936757 45.711112
+	// AWH 44.599998 38.795824 30.961047 24.957332
+	// DG 79.470001 55.619421 53.650768 54.297044
+	// BMY 69.269997 47.526666 42.80052 32.369561
+	// BX 39.610001 31.064205 19.683575 10.798957
 
 
-// var portfolio = new Array({symbol: "WRB"}, {symbol: "DIS"}, {symbol: "AWH"}, {symbol: "DG"}, {symbol: "BMY"}, {symbol: "BX"});
-var portfolio = [];
-portfolio.push({symbol: "WRB", historicalQuotes: new Array (56.259998, 44.75884, 42.425345, 36.445827)});
-portfolio.push({symbol: "DIS", historicalQuotes: new Array (116.440002, 84.576877, 63.936757, 45.711112)});
-portfolio.push({symbol: "AWH", historicalQuotes: new Array (44.599998, 38.795824, 30.961047, 24.957332)});
-portfolio.push({symbol: "DG", historicalQuotes: new Array (79.470001, 55.619421, 53.650768, 54.297044)});
-portfolio.push({symbol: "BMY", historicalQuotes: new Array (69.269997, 47.526666, 42.80052, 32.369561)});
-portfolio.push({symbol: "BX", historicalQuotes: new Array (39.610001, 31.064205, 19.683575, 10.798957)});
+	// HARDCODE SOME HISTORICAL DATA
 
-for (var holding in portfolio) {
-	var historicalGain = [];
-	historicalGain.push(0);
-	for (var t=1; t<portfolio[holding].historicalQuotes.length; t++) {
-		historicalGain.push((portfolio[holding].historicalQuotes[0] - portfolio[holding].historicalQuotes[t]) / portfolio[holding].historicalQuotes[0]);
+	var portfolio = [], holding;
+	portfolio.push({symbol: "WRB", valuePct: 0.36, historicalQuotes: new Array (56.259998, 44.75884, 42.425345, 36.445827)});
+	portfolio.push({symbol: "DIS", valuePct: 0.15, historicalQuotes: new Array (116.440002, 84.576877, 63.936757, 45.711112)});
+	portfolio.push({symbol: "AWH", valuePct: 0.11, historicalQuotes: new Array (44.599998, 38.795824, 30.961047, 24.957332)});
+	portfolio.push({symbol: "DG", valuePct: 0.09, historicalQuotes: new Array (79.470001, 55.619421, 53.650768, 54.297044)});
+	portfolio.push({symbol: "BMY", valuePct: 0.14, historicalQuotes: new Array (69.269997, 47.526666, 42.80052, 32.369561)});
+	portfolio.push({symbol: "BX", valuePct: 0.12, historicalQuotes: new Array (39.610001, 31.064205, 19.683575, 10.798957)});
+
+
+	// FROM THESE, CALCULATE THE HISTORICAL GAINS
+
+	for (holding in portfolio) {
+		var historicalGain = [];
+		historicalGain.push(0);
+		for (var t=1; t<portfolio[holding].historicalQuotes.length; t++) {
+			historicalGain.push((portfolio[holding].historicalQuotes[0] - portfolio[holding].historicalQuotes[t]) / portfolio[holding].historicalQuotes[0]);
+		}
+		portfolio[holding].historicalGain = historicalGain;
 	}
-	portfolio[holding].historicalGain = historicalGain;
-}
 
-// var symbols = [
+	// HISTORICAL GAINS
+	// WRB .2044 .2459 .3522
+	// DIS .2736 .4509 .6074
+	// AWH .1301 .3058 .4404
+	// DG  .3001 .3248 .3168
+	// BMY .3139 .3821 .5327
+	// BX  .2157 .5031 .7274
 
-// 	{
-// 		"name": "WRB",
-// 		"values": [
-// 			{ "x": 0, "y": 0.1128},
-// 			{ "x": 0, "y": 0.1128},
-// 			{ "x": 0, "y": 0.1128},
-// 		]
-// 	}
+	// ONE YEAR
+	// BMY .3139 .3821 .5327
+	// DG  .3001 .3248 .3168
+	// DIS .2736 .4509 .6074
+	// BX  .2157 .5031 .7274
+	// WRB .2044 .2459 .3522
+	// AWH .1301 .3058 .4404
 
-// ]
+	// TWO YEARS
+	// BX  .2157 .5031 .7274
+	// DIS .2736 .4509 .6074
+	// BMY .3139 .3821 .5327
+	// DG  .3001 .3248 .3168
+	// AWH .1301 .3058 .4404
+	// WRB .2044 .2459 .3522
+
+	// THREE YEARS
+	// BX  .2157 .5031 .7274
+	// DIS .2736 .4509 .6074
+	// BMY .3139 .3821 .5327
+	// AWH .1301 .3058 .4404
+	// WRB .2044 .2459 .3522
+	// DG  .3001 .3248 .3168
+
+
+	// CONVERT THE DATA INTO AN (x,y,y0) TUPLE
+
+	var y0_1yr=[], y0_2yr=[], y0_3yr=[];
+
+	for (holding in portfolio) {
+		y0_1yr.push(0);
+		y0_2yr.push(0);
+		y0_3yr.push(0);
+	}
+
+	for (holding in portfolio) {
+		for (var otherHolding in portfolio) {
+			if (holding != otherHolding) {
+				if (portfolio[holding].historicalGain[1] > portfolio[otherHolding].historicalGain[1]) {
+					y0_1yr[holding] += portfolio[otherHolding].valuePct;
+				}
+				if (portfolio[holding].historicalGain[2] > portfolio[otherHolding].historicalGain[2]) {
+					y0_2yr[holding] += portfolio[otherHolding].valuePct;
+				}
+				if (portfolio[holding].historicalGain[3] > portfolio[otherHolding].historicalGain[3]) {
+					y0_3yr[holding] += portfolio[otherHolding].valuePct;
+				}
+			}
+		}
+	}
+
+	var portfolio_tuples = [], holding_samples = [];
+
+	for (holding in portfolio) {
+		samples = [];
+		samples.push({x:0, y:portfolio[holding].valuePct, y0:y0_1yr[holding]});
+		samples.push({x:1, y:portfolio[holding].valuePct, y0:y0_2yr[holding]});
+		samples.push({x:2, y:portfolio[holding].valuePct, y0:y0_3yr[holding]});
+		portfolio_tuples.push(samples);
+	}
+
+
+	// RUN THE VISUALIZATION d3.layout.stack()
 
 	var n = 6, // number of symbols
-	    m = 1, // number of samples per symbol
+	    m = 3, // number of samples per symbol
 	    stack = d3.layout.stack(),
 	    // symbols = stack(d3.range(n).map(function() { return bumpLayer(m, .1); })),
-	    symbols = stack(d3.range(n).map(function() { return bumpLayer(m, .1); })),
+	    symbols = portfolio_tuples,
 	    yGroupMax = d3.max(symbols, function(layer) { return d3.max(layer, function(d) { return d.y; }); }),
 	    yStackMax = d3.max(symbols, function(layer) { return d3.max(layer, function(d) { return d.y0 + d.y; }); });
 
