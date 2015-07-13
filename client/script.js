@@ -6,22 +6,47 @@ my_app.factory('DataFactory', function($http) {
 
     function updateQuote (positionIndex) {
 
+        // var quote = 0;
     	var symbolToQuote = {symbol: positions[positionIndex].symbol};
-    	var quote = 0;
         console.log("QUO [DataFactory.getQuote()] need to get a quote: ", symbolToQuote);
         $http.post('/getQuote', symbolToQuote).success(function(output) {
         	if (output.error != null) {
-        		console.log("QUO [DataFactory.getQuote()] ERROR: ", output.error);
+        		console.log("QUO [DataFactory.updateQuote()] ERROR: ", output.error);
         		positions.splice(positionIndex,1);
         	}
         	else {
-		        console.log("QUO [DataFactory.getQuote()] success, returning "+output.lastTradePriceOnly); //, "+symbol+" @ $"+output.lastTradePriceOnly);
+		        console.log("QUO [DataFactory.updateQuote()] success, returning "+output.lastTradePriceOnly);
 		        positions[positionIndex].quote = output.lastTradePriceOnly;
 		        positions[positionIndex].name = output.name;
 		        positions[positionIndex].performance = output.percentChangeFrom200DayMovingAverage;
 	    		updateValuesForAllPositions();
 	    	}
         });
+
+        console.log("QUO-H [DataFactory.getQuote()] need to get a historical quote: ", symbolToQuote);
+        var historicalDates = ['2015-07-10','2014-07-10','2013-07-10','2012-07-10'];
+
+        positions[positionIndex].historicalQuotes = [];
+        for (var dateNum=0; dateNum<historicalDates.length; dateNum++) {
+            positions[positionIndex].historicalQuotes.push(0);
+            var dateToQuote = {date: historicalDates[dateNum]};
+            var historicalQuoteReq = {symbol: positions[positionIndex].symbol, dateIdx: dateNum, date: historicalDates[dateNum]};
+            $http.post('/getQuoteHistorical', historicalQuoteReq).success(function(output) {
+                if (output.error != null) {
+                    console.log("QUO-H [DataFactory.updateQuote()] ERROR: ", output.error);
+                    positions.splice(positionIndex,1);
+                }
+                else {
+                    console.log("QUO-H [DataFactory.updateQuote()] success, returning "+output.adjClose);
+                    positions[positionIndex].historicalQuotes[output.dateIdx] = output.adjClose.toFixed(2);
+                    // console.log("QUO-H [DataFactory.updateQuote()] success, returning "+output.lastTradePriceOnly); //, "+symbol+" @ $"+output.lastTradePriceOnly);
+                    // positions[positionIndex].quote = output.lastTradePriceOnly;
+                    // positions[positionIndex].name = output.name;
+                    // positions[positionIndex].performance = output.percentChangeFrom200DayMovingAverage;
+                    // updateValuesForAllPositions();
+                }
+            });
+        }
     }
 
     function updateTotalValue () {

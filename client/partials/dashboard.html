@@ -27,7 +27,10 @@
 				<th>Quote</th>
 				<th>Value</th>
 				<th>ValuePct</th>
-				<th>Performance</th>
+				<th>1yearAgo</th>
+				<th>2yearAgo</th>
+				<th>3yearAgo</th>
+
 			</tr>
 		</thead>
 		<tbody id="allData">
@@ -38,7 +41,9 @@
 				<td>${{position.quote}}</td>
 				<td>${{position.value}}</td>
 				<td>{{position.valuePct}}%</td>
-				<td>{{position.performance}}</td>
+				<td>${{position.historicalQuotes[1]}}</td>
+				<td>${{position.historicalQuotes[2]}}</td>
+				<td>${{position.historicalQuotes[3]}}</td>
 			</tr>
 			<tr>
 				<td></td>
@@ -48,6 +53,9 @@
 				<th>${{getTotal()}}</th>
 				<th>100%</th>
 				<td></td>
+				<td></td>
+				<td></td>
+
 			</tr>
 		</tbody>
 	</table>

@@ -7,53 +7,6 @@ module.exports = (function() {
 
 			var yahooFinance = require('yahoo-finance');
 
-			// yahooFinance.historical({
-			//   symbol: 'AAPL',
-			//   from: '2012-01-01',
-			//   to: '2012-12-31',
-			//   // period: 'd'  // 'd' (daily), 'w' (weekly), 'm' (monthly), 'v' (dividends only)
-			// }, function (err, quotes) {
-			// 	if (err != null) {
-			// 	  console.log("historical err: "+err);
-			// 	} else {
-			// 		for (key in quotes) {
-			// 		  console.log("historical quotes["+key+"]: "+quotes[key]);
-			// 		  for (key2 in key) {
-			// 		    console.log(quotes[key]+"["+key2+"]: "+quotes[key][key2]);
-
-			// 		  }
-			// 		}
-			// 	}
-			// });
-
-
-
-			// var util = require('util');
-			// // require('colors');
-			// var SYMBOL = 'BX';
-			// yahooFinance.historical({
-			//   symbol: SYMBOL,
-			//   from: '2014-07-15',
-			//   to: '2015-07-10',
-			//   period: 'd'
-			// }, function (err, quotes) {
-			//   if (err) { throw err; }
-			//   console.log(util.format(
-			//     '=== %s (%d) ===',
-			//     SYMBOL,
-			//     quotes.length
-			//   ).cyan);
-			//   if (quotes[0]) {
-			//     console.log(
-			//       '%s\n...\n%s',
-			//       JSON.stringify(quotes[0], null, 2),
-			//       JSON.stringify(quotes[quotes.length - 1], null, 2)
-			//     );
-			//   } else {
-			//     console.log('N/A');
-			//   }
-			// });
-
 			yahooFinance.snapshot(
 				{
 				    symbol: req.body.symbol,
@@ -187,15 +140,49 @@ module.exports = (function() {
 	                    console.log("QUO [portfolios.js] APP ERROR: ", appError);
 	                    res.json({error: appError})
 					} else {
-						console.log("QUO [portfolios.js] success, grabbed: ",apiResults.symbol);
+						console.log("QUO [portfolios.js] success, grabbed: "+apiResults.symbol+"@"+apiResults.lastTradePriceOnly);
 						// console.log(apiResults);
 	                    res.json(apiResults);
 					}
 				}
 			);
 
-        }
+        }, // closes getQuote()
+
+        getQuoteHistorical: function(req,res) {
+
+            console.log("QUO-H [portfolios.js] need to get a historical quote: ",req.body);
+
+			var yahooFinance = require('yahoo-finance');
+
+			yahooFinance.historical({
+				  symbol: req.body.symbol,
+				  from: req.body.date,
+				  to: req.body.date,
+				  period: 'd'
+				}, function (apiError, apiResults) {
+
+					// console.log(apiResults);
+					// console.log(apiResults[0].adjClose);
+
+					if (apiError != null) {
+	                    console.log("QUO-H [portfolios.js] API ERROR: ", apiError);
+	                    res.json({error: apiError});
+					} else if (apiResults[0].symbol == null) {
+						// console.log(apiResults);
+						var appError = "ticker symbol was not found";
+	                    console.log("QUO-H [portfolios.js] APP ERROR: ", appError);
+	                    res.json({error: appError})
+					} else {
+						console.log("QUO-H [portfolios.js] success, grabbed: "+apiResults[0].symbol+"@"+apiResults[0].adjClose+" (idx="+req.body.dateIdx+")");
+						// console.log(apiResults);
+						apiResults[0].dateIdx = req.body.dateIdx;
+	                    res.json(apiResults[0]);
+					}
+				}
+			);
 
 
-    }
+		} // closes getQuoteHistorical()
+    } // closes return
 })();
