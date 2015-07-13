@@ -380,9 +380,9 @@
 
 	for (holding in portfolio) {
 		samples = [];
-		samples.push({x:0, y:portfolio[holding].valuePct, y0:y0_1yr[holding]});
-		samples.push({x:1, y:portfolio[holding].valuePct, y0:y0_2yr[holding]});
-		samples.push({x:2, y:portfolio[holding].valuePct, y0:y0_3yr[holding]});
+		samples.push({symbol:portfolio[holding].symbol, x:0, y:portfolio[holding].valuePct, y0:y0_1yr[holding]});
+		samples.push({symbol:portfolio[holding].symbol, x:1, y:portfolio[holding].valuePct, y0:y0_2yr[holding]});
+		samples.push({symbol:portfolio[holding].symbol, x:2, y:portfolio[holding].valuePct, y0:y0_3yr[holding]});
 		portfolio_tuples.push(samples);
 	}
 
@@ -391,13 +391,16 @@
 
 	var n = 6, // number of symbols
 	    m = 3, // number of samples per symbol
-	    stack = d3.layout.stack(),
+	    // stack = d3.layout.stack(),
 	    // symbols = stack(d3.range(n).map(function() { return bumpLayer(m, .1); })),
+	    stack = d3.layout.stack()
+	    	.values(function(d) { return d.y; }),
+
 	    symbols = portfolio_tuples,
 	    yGroupMax = d3.max(symbols, function(layer) { return d3.max(layer, function(d) { return d.y; }); }),
 	    yStackMax = d3.max(symbols, function(layer) { return d3.max(layer, function(d) { return d.y0 + d.y; }); });
 
-	console.log("symbols:");
+	// console.log("symbols:");
 	for(var symbolNum=0; symbolNum<symbols.length; symbolNum++) {
 		var thisSymbol = symbols[symbolNum];
 		var thisSymbolData = "[ ";
@@ -407,10 +410,10 @@
 			thisSymbolData += thisSampleNum.x+","+thisSampleNum.y+","+thisSampleNum.y0;
 			thisSymbolData += "} ]";
 		}
-			console.log("symbols["+symbolNum+"] has {x,y,y0} data: "+thisSymbolData);
+			// console.log("symbols["+symbolNum+"] has {x,y,y0} data: "+thisSymbolData);
 	}
-	console.log("yGroupMax = "+yGroupMax);
-	console.log("yStackMax = "+yStackMax);
+	// console.log("yGroupMax = "+yGroupMax);
+	// console.log("yStackMax = "+yStackMax);
 
 	var margin = {top: 40, right: 10, bottom: 20, left: 10},
 	    width = 960 - margin.left - margin.right,
@@ -453,6 +456,18 @@
 	    .attr("y", height)
 	    .attr("width", x.rangeBand())
 	    .attr("height", 0);
+
+	// svg.selectAll("text")
+	// 	.data(symbols)
+	// 	.enter()
+	// 	.append("text")
+	// 	.text("foo")
+
+	// 	// .text(function(d,i) { return y(d.y) })
+	// 	.attr("x", function(d,i) { return i * (width / (m*n)) + 6; })
+	// 	// .attr("x", function(d,i) { return i * d.x; })
+	// 	.attr("y", function(d) { return height; });
+
 
 	rect.transition()
 	    .delay(function(d, i) { return i * 10; })
@@ -503,13 +518,13 @@
 	}
 
 	// modified bumpLayer() function
-	function bumpLayer(n, o) {
+	// function bumpLayer(n, o) {
 
-	  var a = [], i;
-	  	  for (i = 0; i < n; ++i) a[i] = Math.floor(Math.random()*5);
+	//   var a = [], i;
+	//   	  for (i = 0; i < n; ++i) a[i] = Math.floor(Math.random()*5);
 
-	  return a.map(function(d, i) { return {x: i, y: Math.max(0, d)}; });
-	}
+	//   return a.map(function(d, i) { return {x: i, y: Math.max(0, d)}; });
+	// }
 
 	</script>
 
