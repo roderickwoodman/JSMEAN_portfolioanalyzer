@@ -8,7 +8,7 @@ my_app.factory('DataFactory', function($http) {
 
         // var quote = 0;
     	var symbolToQuote = {symbol: positions[positionIndex].symbol};
-        console.log("QUO [DataFactory.getQuote()] need to get a quote: ", symbolToQuote);
+        console.log("QUO [DataFactory.updateQuote()] need to get a quote: ", symbolToQuote);
         $http.post('/getQuote', symbolToQuote).success(function(output) {
         	if (output.error != null) {
         		console.log("QUO [DataFactory.updateQuote()] ERROR: ", output.error);
@@ -27,27 +27,40 @@ my_app.factory('DataFactory', function($http) {
         var historicalDates = ['2015-07-10','2014-07-10','2013-07-10','2012-07-10'];
 
         positions[positionIndex].historicalQuotes = [];
+        positions[positionIndex].historicalGains = [];
         for (var dateNum=0; dateNum<historicalDates.length; dateNum++) {
             positions[positionIndex].historicalQuotes.push(0);
+            positions[positionIndex].historicalGains.push(0);
             var dateToQuote = {date: historicalDates[dateNum]};
-            var historicalQuoteReq = {symbol: positions[positionIndex].symbol, dateIdx: dateNum, date: historicalDates[dateNum]};
+            var historicalQuoteReq = {symbol: positions[positionIndex].symbol, baseline: positions[positionIndex].quote, dateIdx: dateNum, date: historicalDates[dateNum]};
             $http.post('/getQuoteHistorical', historicalQuoteReq).success(function(output) {
                 if (output.error != null) {
                     console.log("QUO-H [DataFactory.updateQuote()] ERROR: ", output.error);
                     positions.splice(positionIndex,1);
                 }
                 else {
-                    console.log("QUO-H [DataFactory.updateQuote()] success, returning "+output.adjClose);
+                    console.log("QUO-H [DataFactory.updateQuote()] success, returning date"+output.dateIdx+"@"+output.adjClose);
+
                     positions[positionIndex].historicalQuotes[output.dateIdx] = output.adjClose.toFixed(2);
-                    // console.log("QUO-H [DataFactory.updateQuote()] success, returning "+output.lastTradePriceOnly); //, "+symbol+" @ $"+output.lastTradePriceOnly);
-                    // positions[positionIndex].quote = output.lastTradePriceOnly;
-                    // positions[positionIndex].name = output.name;
-                    // positions[positionIndex].performance = output.percentChangeFrom200DayMovingAverage;
-                    // updateValuesForAllPositions();
+                    // FIXME: historical gains is broken because baseline isn't resolved at client before historical quote is sent
+                    // positions[positionIndex].historicalGains[output.dateIdx] = (((output.adjClose - output.baseline) / output.baseline) * 100).toFixed(1);
+                    // console.log("baseline = "+output.baseline+" historical gain "+output.dateIdx+" = "+positions[positionIndex].historicalGains[output.dateIdx]);
                 }
             });
         }
     }
+
+    // // FIXME: historical gains is broken because baseline isn't resolved at client before historical quote is sent
+    // function updateQuoteGain (positionIndex) {
+    //     console.log("QUO [DataFactory.updateQuote()] updating gains for: ", positions[positionIndex].symbol);
+    //     positions[positionIndex].historicalGain = [];
+    //     positions[positionIndex].historicalGain.push(0);
+    //     for (var i=1; i<4; i++) {
+    //         var gain = (positions[positionIndex].historicalQuotes[i] - positions[positionIndex].historicalQuotes[0]) / positions[positionIndex].historicalQuotes[0];
+    //         positions[positionIndex].historicalGain.push(gain);
+    //         console.log("QuoteGain for position["+positionIndex+"]["+i+"] = "+gain);
+    //     }
+    // }
 
     function updateTotalValue () {
 
@@ -75,6 +88,95 @@ my_app.factory('DataFactory', function($http) {
 		}
     }
 
+    // check that the browser supports the HTML5 file API
+    function browserSupportsFileUpload() {
+        var isCompatible = false;
+        if (window.File && window.FileReader && window.FileList && window.Blob) {
+            isCompatible = true;
+        }
+        return isCompatible;
+    }
+ 
+    // process the selected file
+    // function upload(evt) {
+    function upload(file) {
+        // $('#man_symbol').val("");
+        // $('#man_qty').val("");
+        if (!browserSupportsFileUpload()) {
+            alert('The File APIs are not fully supported in this browser!');
+        } else {
+            var data = null;
+            // var file = evt.target.files[0];
+            var reader = new FileReader();
+            reader.readAsText(file);
+            reader.onload = function(event) {
+                var csvData = event.target.result;
+                data = $.csv.toArrays(csvData);
+                if (data && data.length > 0) {
+                    //console.log('Imported -' + data.length + '- rows successfully!');
+                    var newSymbols = parseFileDataForPositionData(data);
+                    console.log(newSymbols);
+                    // updatePortfolioHoldings(newSymbols);
+                    // updatePortfolioValue();
+                    // updatePortfolioView();
+                } else {
+                    alert('No data to import!');
+                }
+            };
+            reader.onerror = function() {
+                alert('Unable to read ' + file.fileName);
+            };
+        }
+    }
+
+    // extract the position data from the file
+    function parseFileDataForPositionData(fileData) {
+        var matchResults = [];
+        var foundFirstSymbol = false;
+        var thisIsFirstSymbol = false;
+        var anotherValidSymbol = false;
+        var qtyColumn = 0;
+        var match = false;
+        for (var i=0; i<fileData.length; i++) 
+        {
+            match = fileData[i][0].trim().toUpperCase().match(/^[A-Z]/);
+            if (match != null) 
+            {
+                if (fileData[i][0].trim() == "Symbol") {
+                    thisIsFirstSymbol = true;
+                    foundFirstSymbol = true;
+                    for (var q=0; q<fileData[i].length-1; q++) {
+                        if (fileData[i][q].trim().toUpperCase() == "QTY") {
+                            qtyColumn = q;
+                            break;
+                        }
+                    }
+                }
+                else if (foundFirstSymbol == true) 
+                {   
+                    symbolToAdd = [];
+                    if (thisIsFirstSymbol == true) {
+                        thisIsFirstSymbol = false;
+                        matchResults.push(new Array(fileData[i][0], fileData[i][q]));
+                    }
+                    else {
+                        anotherValidSymbol = true;
+                        for (var j=0; j<fileData[i].length-1; j++) {
+                            if (fileData[i][j].length == 0) {
+                                anotherValidSymbol = false;
+                                break;
+                            }
+                        }
+                        if (anotherValidSymbol == true) {
+                            matchResults.push(new Array(fileData[i][0], fileData[i][q]));
+                        }
+                    }
+                }
+            }
+        }
+        return matchResults;
+    }
+
     factory.getTotalValue = function() {
 		return totalValue;
     }
@@ -82,6 +184,24 @@ my_app.factory('DataFactory', function($http) {
     factory.getPositions = function() {
     	return positions;
     }
+
+    factory.addPositionsFromFile = function(info, callback) {
+
+        console.log("ADD-M [DataFactory.addPositionsFromFile()] added position(s)");
+
+        // info.file
+        console.log(info);
+        // upload(info.file);
+
+
+
+
+        // info.symbol = info.symbol.toUpperCase();
+
+
+        console.log("ADD-M [DataFactory.addPositionsFromFile()] added position(s)");
+        callback(positions);
+    };
 
     factory.addPosition = function(info, callback) {
     	var positionIndexModified;
@@ -103,7 +223,8 @@ my_app.factory('DataFactory', function($http) {
 	        console.log("ADD [DataFactory.addPosition()] added position: ", newPosition);
         }
         updateQuote(positionIndexModified);
-		// updateValuesForAllPositions();
+        // updateQuoteGain(positionIndexModified); // FIXME: historical gains is broken
+
 		callback(positions);
     };
 
@@ -131,95 +252,20 @@ my_app.controller('DashboardController', function($scope, DataFactory) {
 	// ################################################
 	// PORTFOLIO INPUT FROM CSV FILE
 
-    // add file upload event listener
-    document.getElementById('csvFileUpload').addEventListener('change', upload, false);
+    // // add file upload event listener
+    // document.getElementById('csvFileUpload').addEventListener('change', upload, false);
  
-    // check that the browser supports the HTML5 file API
-    function browserSupportsFileUpload() {
-        var isCompatible = false;
-        if (window.File && window.FileReader && window.FileList && window.Blob) {
-	        isCompatible = true;
-        }
-        return isCompatible;
-    }
- 
-    // process the selected file
-    function upload(evt) {
-		$('#man_symbol').val("");
-		$('#man_qty').val("");
-	    if (!browserSupportsFileUpload()) {
-	        alert('The File APIs are not fully supported in this browser!');
-        } else {
-            var data = null;
-            var file = evt.target.files[0];
-            var reader = new FileReader();
-            reader.readAsText(file);
-            reader.onload = function(event) {
-                var csvData = event.target.result;
-                data = $.csv.toArrays(csvData);
-                if (data && data.length > 0) {
-                    //console.log('Imported -' + data.length + '- rows successfully!');
-                    var newSymbols = parseFileDataForPositionData(data);
-                    updatePortfolioHoldings(newSymbols);
-                    updatePortfolioValue();
-                    updatePortfolioView();
-                } else {
-                    alert('No data to import!');
-                }
-            };
-            reader.onerror = function() {
-                alert('Unable to read ' + file.fileName);
-            };
-        }
-    }
+    $scope.addPositionViaFile = function() {
 
-    // extract the position data from the file
-    function parseFileDataForPositionData(fileData) {
-    	var matchResults = [];
-    	var foundFirstSymbol = false;
-    	var thisIsFirstSymbol = false;
-    	var anotherValidSymbol = false;
-    	var qtyColumn = 0;
-    	var match = false;
-    	for (var i=0; i<fileData.length; i++) 
-    	{
-    		match = fileData[i][0].trim().toUpperCase().match(/^[A-Z]/);
-    		if (match != null) 
-    		{
-	    		if (fileData[i][0].trim() == "Symbol") {
-	    			thisIsFirstSymbol = true;
-	    			foundFirstSymbol = true;
-	    			for (var q=0; q<fileData[i].length-1; q++) {
-	    				if (fileData[i][q].trim().toUpperCase() == "QTY") {
-	    					qtyColumn = q;
-	    					break;
-	    				}
-	    			}
-	    		}
-	    		else if (foundFirstSymbol == true) 
-	    		{	
-	    			symbolToAdd = [];
-		    		if (thisIsFirstSymbol == true) {
-		    			thisIsFirstSymbol = false;
-		    			matchResults.push(new Array(fileData[i][0], fileData[i][q]));
-		    		}
-		    		else {
-		    			anotherValidSymbol = true;
-		    			for (var j=0; j<fileData[i].length-1; j++) {
-		    				if (fileData[i][j].length == 0) {
-		    					anotherValidSymbol = false;
-		    					break;
-		    				}
-		    			}
-		    			if (anotherValidSymbol == true) {
-			    			matchResults.push(new Array(fileData[i][0], fileData[i][q]));
-						}
-		    		}
-		    	}
-			}
-    	}
-    	return matchResults;
-    }
+        console.log("<<< ADD POSITION(S) VIA FILE CLICK >>>");
+
+        console.log("ADD-M [DashboardController.addPositionViaFile()] need to add position(s): "+$scope.newFilePositions);
+        // DataFactory.addPositionsFromFile($scope.newFilePositions, function(factoryPositions) {
+        //     console.log("ADD-M [DashboardController.addPositionViaFile()] success");
+        //     $scope.positions = factoryPositions;
+        //     $scope.newFilePositions = {};
+        // });
+    };
 
 
 	// ################################################

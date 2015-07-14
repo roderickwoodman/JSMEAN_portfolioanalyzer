@@ -162,9 +162,6 @@ module.exports = (function() {
 				  period: 'd'
 				}, function (apiError, apiResults) {
 
-					// console.log(apiResults);
-					// console.log(apiResults[0].adjClose);
-
 					if (apiError != null) {
 	                    console.log("QUO-H [portfolios.js] API ERROR: ", apiError);
 	                    res.json({error: apiError});
@@ -177,6 +174,7 @@ module.exports = (function() {
 						console.log("QUO-H [portfolios.js] success, grabbed: "+apiResults[0].symbol+"@"+apiResults[0].adjClose+" (idx="+req.body.dateIdx+")");
 						// console.log(apiResults);
 						apiResults[0].dateIdx = req.body.dateIdx;
+						apiResults[0].baseline = req.body.baseline;
 	                    res.json(apiResults[0]);
 					}
 				}
