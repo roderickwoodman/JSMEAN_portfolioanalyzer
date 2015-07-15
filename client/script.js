@@ -287,6 +287,184 @@ my_app.controller('DashboardController', function($scope, DataFactory) {
 		return DataFactory.getTotalValue();
 	}
 
+
+// start D3 plot
+
+    // HARDCODE SOME HISTORICAL DATA
+
+    var portfolio = [], holding;
+    portfolio.push({symbol: "WRB", valuePct: 0.36, historicalQuotes: new Array (56.259998, 44.75884, 42.425345, 36.445827)});
+    portfolio.push({symbol: "DIS", valuePct: 0.15, historicalQuotes: new Array (116.440002, 84.576877, 63.936757, 45.711112)});
+    portfolio.push({symbol: "AWH", valuePct: 0.11, historicalQuotes: new Array (44.599998, 38.795824, 30.961047, 24.957332)});
+    portfolio.push({symbol: "DG", valuePct: 0.09, historicalQuotes: new Array (79.470001, 55.619421, 53.650768, 54.297044)});
+    portfolio.push({symbol: "BMY", valuePct: 0.14, historicalQuotes: new Array (69.269997, 47.526666, 42.80052, 32.369561)});
+    portfolio.push({symbol: "BX", valuePct: 0.12, historicalQuotes: new Array (39.610001, 31.064205, 19.683575, 10.798957)});
+
+
+    // FROM THESE, CALCULATE THE HISTORICAL GAINS
+
+    for (holding in portfolio) {
+        var historicalGain = [];
+        historicalGain.push(0);
+        for (var t=1; t<portfolio[holding].historicalQuotes.length; t++) {
+            historicalGain.push((portfolio[holding].historicalQuotes[0] - portfolio[holding].historicalQuotes[t]) / portfolio[holding].historicalQuotes[0]);
+        }
+        portfolio[holding].historicalGain = historicalGain;
+    }
+
+    // CONVERT THE DATA INTO AN (x,y,y0) TUPLE
+
+    var y0_1yr=[], y0_2yr=[], y0_3yr=[];
+
+    for (holding in portfolio) {
+        y0_1yr.push(0);
+        y0_2yr.push(0);
+        y0_3yr.push(0);
+    }
+
+    for (holding in portfolio) {
+        for (var otherHolding in portfolio) {
+            if (holding != otherHolding) {
+                if (portfolio[holding].historicalGain[1] > portfolio[otherHolding].historicalGain[1]) {
+                    y0_1yr[holding] += portfolio[otherHolding].valuePct;
+                }
+                if (portfolio[holding].historicalGain[2] > portfolio[otherHolding].historicalGain[2]) {
+                    y0_2yr[holding] += portfolio[otherHolding].valuePct;
+                }
+                if (portfolio[holding].historicalGain[3] > portfolio[otherHolding].historicalGain[3]) {
+                    y0_3yr[holding] += portfolio[otherHolding].valuePct;
+                }
+            }
+        }
+    }
+
+    var portfolio_tuples = [], holding_samples = [];
+
+    for (holding in portfolio) {
+        samples = [];
+        samples.push({symbol:portfolio[holding].symbol, x:0, y:portfolio[holding].valuePct, y0:y0_1yr[holding], y0_gain:portfolio[holding].historicalGain[1]});
+        samples.push({symbol:portfolio[holding].symbol, x:1, y:portfolio[holding].valuePct, y0:y0_2yr[holding], y0_gain:portfolio[holding].historicalGain[2]});
+        samples.push({symbol:portfolio[holding].symbol, x:2, y:portfolio[holding].valuePct, y0:y0_3yr[holding], y0_gain:portfolio[holding].historicalGain[3]});
+        portfolio_tuples.push(samples);
+    }
+
+
+    // RUN THE VISUALIZATION d3.layout.stack()
+
+    var n = 6, // number of symbols
+        m = 3, // number of samples per symbol
+        m_string = ["1-year","2-year","3-year"],
+        // stack = d3.layout.stack(),
+        // symbols = stack(d3.range(n).map(function() { return bumpLayer(m, .1); })),
+        stack = d3.layout.stack()
+            .values(function(d) { return d.y; }),
+
+        symbols = portfolio_tuples,
+        yGroupMax = d3.max(symbols, function(layer) { return d3.max(layer, function(d) { return d.y; }); }),
+        yStackMax = d3.max(symbols, function(layer) { return d3.max(layer, function(d) { return d.y0 + d.y; }); });
+
+    // console.log("symbols:");
+    for(var symbolNum=0; symbolNum<symbols.length; symbolNum++) {
+        var thisSymbol = symbols[symbolNum];
+        var thisSymbolData = "[ ";
+        for (var sampleNum=0; sampleNum<thisSymbol.length; sampleNum++) {
+            var thisSampleNum = thisSymbol[sampleNum];
+            thisSymbolData += "{";
+            thisSymbolData += thisSampleNum.x+","+thisSampleNum.y+","+thisSampleNum.y0;
+            thisSymbolData += "} ]";
+        }
+            // console.log("symbols["+symbolNum+"] has {x,y,y0} data: "+thisSymbolData);
+    }
+    // console.log("yGroupMax = "+yGroupMax);
+    // console.log("yStackMax = "+yStackMax);
+
+    var margin = {top: 40, right: 10, bottom: 60, left: 10},
+        width = 960 - margin.left - margin.right,
+        height = 500 - margin.top - margin.bottom;
+
+    var x = d3.scale.ordinal()
+        .domain(d3.range(m))
+        .rangeRoundBands([0, width], .08);
+
+    var y = d3.scale.linear()
+        .domain([0, yStackMax])
+        .range([height, 0]);
+
+    var color = d3.scale.linear()
+        .domain([0, n - 1])
+        .range(["#476A34", "#93DB70"]);
+
+    var xAxis = d3.svg.axis()   // (1) create generic axis function
+        .scale(x)               // (2) define the scale to operate on
+        .tickSize(0)
+        .tickPadding(6)
+        .tickFormat(function(i) { return m_string[i]; })
+        .orient("bottom");      // (3) where labels appear relative to axis
+
+    var svg = d3.select("body").append("svg")
+        .attr("width", width + margin.left + margin.right)
+        .attr("height", height + margin.top + margin.bottom)
+      .append("g")
+        .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+    svg.append("text")
+        .attr("x", width/2)
+        .attr("y", height+(margin.bottom)*0.75)
+        .style("text-anchor", "middle")
+        .text("PERFORMANCE");
+
+    var layer = svg.selectAll(".layer")
+        .data(symbols)
+      .enter().append("g")
+        .attr("class", "layer")
+        .style("fill", function(d, i) { return color(i); });
+
+    var rect = layer.selectAll("rect")
+        .data(function(d) { return d; })
+      .enter().append("rect")
+        .attr("x", function(d) { return x(d.x); })
+        .attr("y", height)
+        .attr("width", x.rangeBand())
+        .attr("height", 0);
+        // .style("fill", function(d, i) { return color(i); });
+
+    var text1 = layer.selectAll("text")
+        .data(function(d) { return d; })
+      .enter().append("text")
+        .attr("x", function(d) { return x(d.x) + x.rangeBand()/2; })
+        .attr("y", function(d) { return y(d.y0 + d.y/2); })
+        .attr("text-anchor", "middle")
+        .text(function(d) { return d.symbol+" (gain="+d.y0_gain.toFixed(3)+")"; })
+        .style("fill", "#000");
+
+    rect.transition()
+        .delay(function(d, i) { return i * 10; })
+        .attr("y", function(d) { return y(d.y0 + d.y); })
+        .attr("height", function(d) { return y(d.y0) - y(d.y0 + d.y); });
+
+    svg.append("g")
+        .attr("class", "x axis")
+        .attr("transform", "translate(0," + height + ")")
+        .call(xAxis);                                       // (4) generate the SVG of the axis itself
+
+    svg.append("text")
+        .attr("x", (width/2))
+        .attr("y", 0-(margin.top/2))
+        .attr("text-anchor", "middle")
+        .style("font-family", "Arial")
+        .style("font-size", "24px")
+        .style("text-decoration", "underline")
+        .text("Weighted Performance vs Time Intervals");
+
+
+
+// end D3 plot
+
+
+
+
+
+
 });
 
 
