@@ -136,9 +136,9 @@
 
 	for (holding in portfolio) {
 		samples = [];
-		samples.push({symbol:portfolio[holding].symbol, x:0, y:portfolio[holding].valuePct, y0:y0_1yr[holding], xLabel:"1yr"});
-		samples.push({symbol:portfolio[holding].symbol, x:1, y:portfolio[holding].valuePct, y0:y0_2yr[holding], xLabel:"2yr"});
-		samples.push({symbol:portfolio[holding].symbol, x:2, y:portfolio[holding].valuePct, y0:y0_3yr[holding], xLabel:"3yr"});
+		samples.push({symbol:portfolio[holding].symbol, x:0, y:portfolio[holding].valuePct, y0:y0_1yr[holding], y0_gain:portfolio[holding].historicalGain[1]});
+		samples.push({symbol:portfolio[holding].symbol, x:1, y:portfolio[holding].valuePct, y0:y0_2yr[holding], y0_gain:portfolio[holding].historicalGain[2]});
+		samples.push({symbol:portfolio[holding].symbol, x:2, y:portfolio[holding].valuePct, y0:y0_3yr[holding], y0_gain:portfolio[holding].historicalGain[3]});
 		portfolio_tuples.push(samples);
 	}
 
@@ -177,8 +177,7 @@
 	    height = 500 - margin.top - margin.bottom;
 
 	var x = d3.scale.ordinal()
-	    .domain(d3.range(m))                // 0,1,2
-	    // .domain(symbols.map(function(d) {return d.xLabel;}))                // 0,1,2
+	    .domain(d3.range(m))
 	    .rangeRoundBands([0, width], .08);
 
 	var y = d3.scale.linear()
@@ -223,12 +222,13 @@
 	    .attr("height", 0);
 	    // .style("fill", function(d, i) { return color(i); });
 
-	var text = layer.selectAll("text")
+	var text1 = layer.selectAll("text")
 	    .data(function(d) { return d; })
 	  .enter().append("text")
-	    .attr("x", function(d) { return x(d.x) - 15; })
+	    .attr("x", function(d) { return x(d.x) + x.rangeBand()/2; })
 	    .attr("y", function(d) { return y(d.y0 + d.y/2); })
-	    .text(function(d) { return d.symbol })
+		.attr("text-anchor", "middle")
+	    .text(function(d) { return d.symbol+" (gain="+d.y0_gain.toFixed(3)+")"; })
 	    .style("fill", "#000");
 
 	rect.transition()
@@ -240,6 +240,15 @@
 	    .attr("class", "x axis")
 	    .attr("transform", "translate(0," + height + ")")
 	    .call(xAxis);										// (4) generate the SVG of the axis itself
+
+	svg.append("text")
+		.attr("x", (width/2))
+		.attr("y", 0-(margin.top/2))
+		.attr("text-anchor", "middle")
+		.style("font-family", "Arial")
+		.style("font-size", "24px")
+		.style("text-decoration", "underline")
+		.text("Weighted Performance vs Time Intervals");
 
 </script>
 

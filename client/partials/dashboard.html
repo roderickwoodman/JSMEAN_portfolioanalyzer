@@ -68,33 +68,12 @@
 	</form>
 	<script>
 
-	// Name	Symbol	Qty	Quote	Value	ValuePct	Performance
-	// W.R. Berkley Corporation Common	WRB	250	$56.26	$14065.00	36%	0.1128
-	// Walt Disney Company (The) Commo	DIS	50	$116.44	$5822.00	15%	0.1039
-	// Bristol-Myers Squibb Company Co	BMY	82	$69.27	$5680.14	14%	0.0781
-	// The Blackstone Group L.P. Commo	BX	125	$39.61	$4951.25	12%	0.0109
-	// Allied World Assurance Company	AWH	100.584	$44.6	$4486.05	11%	0.08689999999999999
-	// Dollar General Corporation Comm	DG	45	$79.47	$3576.15	9%	0.0843
-	// TOTAL:	$38580.59	100%
-
-	// WRB 0.36 0.1128
-	// DIS 0.15 0.1039
-	// AWH 0.11 0.08689999999999999
-	// DG 0.09	0.0843
-	// BMY 0.14 0.0781
-	// BX 0.12	0.0109
-
-	//HISTORICAL adjClose: 2015-07-10 2014-07-15, 2013-07-15, 2012-07-15
-	// WRB 56.259998 44.75884 42.425345 36.445827
-	// DIS 116.440002 84.576877 63.936757 45.711112
-	// AWH 44.599998 38.795824 30.961047 24.957332
-	// DG 79.470001 55.619421 53.650768 54.297044
-	// BMY 69.269997 47.526666 42.80052 32.369561
-	// BX 39.610001 31.064205 19.683575 10.798957
-
 // console.log($scope.positions);
 	// var portfolio = positions
 	// HARDCODE SOME HISTORICAL DATA
+
+	// var tickers = [ "WRB", "DIS", "AWH", "DG", "BMY", "BX" ];
+	// var 
 
 	var portfolio = [], holding;
 	portfolio.push({symbol: "WRB", valuePct: 0.36, historicalQuotes: new Array (56.259998, 44.75884, 42.425345, 36.445827)});
@@ -179,9 +158,9 @@
 
 	for (holding in portfolio) {
 		samples = [];
-		samples.push({symbol:portfolio[holding].symbol, x:0, y:portfolio[holding].valuePct, y0:y0_1yr[holding]});
-		samples.push({symbol:portfolio[holding].symbol, x:1, y:portfolio[holding].valuePct, y0:y0_2yr[holding]});
-		samples.push({symbol:portfolio[holding].symbol, x:2, y:portfolio[holding].valuePct, y0:y0_3yr[holding]});
+		samples.push({symbol:portfolio[holding].symbol, x:0, y:portfolio[holding].valuePct, y0:y0_1yr[holding], y0_gain:portfolio[holding].historicalGain[1]});
+		samples.push({symbol:portfolio[holding].symbol, x:1, y:portfolio[holding].valuePct, y0:y0_2yr[holding], y0_gain:portfolio[holding].historicalGain[2]});
+		samples.push({symbol:portfolio[holding].symbol, x:2, y:portfolio[holding].valuePct, y0:y0_3yr[holding], y0_gain:portfolio[holding].historicalGain[3]});
 		portfolio_tuples.push(samples);
 	}
 
@@ -190,6 +169,7 @@
 
 	var n = 6, // number of symbols
 	    m = 3, // number of samples per symbol
+	    m_string = ["1-year","2-year","3-year"],
 	    // stack = d3.layout.stack(),
 	    // symbols = stack(d3.range(n).map(function() { return bumpLayer(m, .1); })),
 	    stack = d3.layout.stack()
@@ -214,7 +194,7 @@
 	// console.log("yGroupMax = "+yGroupMax);
 	// console.log("yStackMax = "+yStackMax);
 
-	var margin = {top: 40, right: 10, bottom: 20, left: 10},
+	var margin = {top: 40, right: 10, bottom: 60, left: 10},
 	    width = 960 - margin.left - margin.right,
 	    height = 500 - margin.top - margin.bottom;
 
@@ -228,15 +208,14 @@
 
 	var color = d3.scale.linear()
 	    .domain([0, n - 1])
-	    .range(["#aad", "#556"]);
+	    .range(["#476A34", "#93DB70"]);
 
-	var xAxis = d3.svg.axis()
-	    .scale(x)
+	var xAxis = d3.svg.axis()   // (1) create generic axis function
+	    .scale(x)				// (2) define the scale to operate on
 	    .tickSize(0)
 	    .tickPadding(6)
-	    // .ticks(3)
-	    // .tickValues(["A","B","C"])
-	    .orient("bottom");
+	    .tickFormat(function(i) { return m_string[i]; })
+	    .orient("bottom");		// (3) where labels appear relative to axis
 
 	var svg = d3.select("body").append("svg")
 	    .attr("width", width + margin.left + margin.right)
@@ -244,11 +223,11 @@
 	  .append("g")
 	    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
-svg.append("text")
-.attr("x", width/2)
-.attr("y", height+margin.bottom)
-.style("text-anchor", "middle")
-.text("Date");
+	svg.append("text")
+		.attr("x", width/2)
+		.attr("y", height+(margin.bottom)*0.5)
+		.style("text-anchor", "middle")
+		.text("PERFORMANCE");
 
 	var layer = svg.selectAll(".layer")
 	    .data(symbols)
@@ -263,18 +242,16 @@ svg.append("text")
 	    .attr("y", height)
 	    .attr("width", x.rangeBand())
 	    .attr("height", 0);
+	    // .style("fill", function(d, i) { return color(i); });
 
-	// svg.selectAll("text")
-	// 	.data(symbols)
-	// 	.enter()
-	// 	.append("text")
-	// 	.text("foo")
-
-	// 	// .text(function(d,i) { return y(d.y) })
-	// 	.attr("x", function(d,i) { return i * (width / (m*n)) + 6; })
-	// 	// .attr("x", function(d,i) { return i * d.x; })
-	// 	.attr("y", function(d) { return height; });
-
+	var text1 = layer.selectAll("text")
+	    .data(function(d) { return d; })
+	  .enter().append("text")
+	    .attr("x", function(d) { return x(d.x) + x.rangeBand()/2; })
+	    .attr("y", function(d) { return y(d.y0 + d.y/2); })
+		.attr("text-anchor", "middle")
+	    .text(function(d) { return d.symbol+" (gain="+d.y0_gain.toFixed(3)+")"; })
+	    .style("fill", "#000");
 
 	rect.transition()
 	    .delay(function(d, i) { return i * 10; })
@@ -284,54 +261,16 @@ svg.append("text")
 	svg.append("g")
 	    .attr("class", "x axis")
 	    .attr("transform", "translate(0," + height + ")")
-	    .call(xAxis);
+	    .call(xAxis);										// (4) generate the SVG of the axis itself
 
-	d3.selectAll("input").on("change", change);
-
-	var timeout = setTimeout(function() {
-	  d3.select("input[value=\"grouped\"]").property("checked", true).each(change);
-	}, 2000);
-
-	function change() {
-	  clearTimeout(timeout);
-	  if (this.value === "grouped") transitionGrouped();
-	  else transitionStacked();
-	}
-
-	function transitionGrouped() {
-	  y.domain([0, yGroupMax]);
-
-	  rect.transition()
-	      .duration(500)
-	      .delay(function(d, i) { return i * 10; })
-	      .attr("x", function(d, i, j) { return x(d.x) + x.rangeBand() / n * j; })
-	      .attr("width", x.rangeBand() / n)
-	    .transition()
-	      .attr("y", function(d) { return y(d.y); })
-	      .attr("height", function(d) { return height - y(d.y); });
-	}
-
-	function transitionStacked() {
-	  y.domain([0, yStackMax]);
-
-	  rect.transition()
-	      .duration(500)
-	      .delay(function(d, i) { return i * 10; })
-	      .attr("y", function(d) { return y(d.y0 + d.y); })
-	      .attr("height", function(d) { return y(d.y0) - y(d.y0 + d.y); })
-	    .transition()
-	      .attr("x", function(d) { return x(d.x); })
-	      .attr("width", x.rangeBand());
-	}
-
-	// modified bumpLayer() function
-	// function bumpLayer(n, o) {
-
-	//   var a = [], i;
-	//   	  for (i = 0; i < n; ++i) a[i] = Math.floor(Math.random()*5);
-
-	//   return a.map(function(d, i) { return {x: i, y: Math.max(0, d)}; });
-	// }
+	svg.append("text")
+		.attr("x", (width/2))
+		.attr("y", 0-(margin.top/2))
+		.attr("text-anchor", "middle")
+		.style("font-family", "Arial")
+		.style("font-size", "24px")
+		.style("text-decoration", "underline")
+		.text("Weighted Performance vs Time Intervals");
 
 </script>
 
