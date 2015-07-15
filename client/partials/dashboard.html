@@ -234,6 +234,8 @@
 	    .scale(x)
 	    .tickSize(0)
 	    .tickPadding(6)
+	    // .ticks(3)
+	    // .tickValues(["A","B","C"])
 	    .orient("bottom");
 
 	var svg = d3.select("body").append("svg")
@@ -241,6 +243,12 @@
 	    .attr("height", height + margin.top + margin.bottom)
 	  .append("g")
 	    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+svg.append("text")
+.attr("x", width/2)
+.attr("y", height+margin.bottom)
+.style("text-anchor", "middle")
+.text("Date");
 
 	var layer = svg.selectAll(".layer")
 	    .data(symbols)

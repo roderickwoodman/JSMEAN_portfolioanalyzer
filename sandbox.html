@@ -6,197 +6,6 @@
 	<title>Portfolio</title>
 	<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-csv/0.71/jquery.csv-0.71.min.js"></script>
-<!--
-    <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/angularjs/1.3.15/angular.min.js"></script>
-    <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/angularjs/1.3.15/angular-route.min.js"></script>
-    <script type="text/javascript" src="./scripts/routes.js"></script>
- -->  
-	<script type="text/javascript">  
-	    $(document).ready(function() {
-
-
-	 		// ################################################
-	    	// GLOBAL VARS AND HELPER FUNCTIONS
-
-	 		var database = [];
-	 		var totalValue = 0;
-
-            function isFloat (n) {
-            	return (n%1 !== 0);
-            }
-
-            function getQuote (symbol) {
-
-            	// var quote = 
-            	// http://query.yahooapis.com/v1/public/yql?q=select%20*%20from%20yahoo.finance.quotes
-
-				$.get(
-					'http://finance.yahoo.com/webservice/v1/symbols/GOOG/quote?format=json', 
-					function(data) {
-						console.log(data);
-					}, 
-					'json');
-
-				return 42;
-
-            }
-
-		    // aggregate the new input portfolio data with the existing data (FIXME: currently the database is in the browser)
-		    function updatePortfolioHoldings (newSymbols) {
-                for (var n=0; n<newSymbols.length; n++) {
-                	// console.log("newSymbols["+n+"]: "+newSymbols[n]);
-                	var newQty = (isFloat(newSymbols[n][1])) ? parseFloat(newSymbols[n][1]) : parseInt(newSymbols[n][1]);
-            		if (database.length == 0) {
-            			database.push(new Array(newSymbols[n][0], newQty, 0, 0));              	
-            		}
-            		else {
-                    	for (var d=0; d<database.length; d++) {
-                    		if (database[d][0] == newSymbols[n][0]) {
-		                    	var currQty = (isFloat(database[d][1])) ? parseFloat(database[d][1]) : parseInt(database[d][1]);
-                    			database[d][1] = currQty + newQty;
-                    			break;
-                    		}
-                    		else if (d == database.length - 1) {
-                    			database.push(new Array(newSymbols[n][0], newQty, 0, 0));       
-		                    	break;
-                    		}
-                    	}
-            		}
-                }
-		    }
-
-		    // update the value of the holdings based on current stock quotes
-		    function updatePortfolioValue () {
-                $('#allData').html("");
-                totalValue = 0;
-                for (var n=0; n<database.length; n++) {
-                	database[n][2] = getQuote(database[n][0]);
-	            	database[n][3] = parseFloat(database[n][1]) * parseFloat(database[n][2]);
-	            	totalValue += database[n][3];
-                }
-                for (n=0; n<database.length; n++) {
-                	database[n][4] = (parseFloat(database[n][3]) / totalValue) * 100;
-                }
-            }
-
-		    // update the view
-		    function updatePortfolioView () {
-                $('#allData').html("");
-                for (var n=0; n<database.length; n++) {
-                    $('#allData').append("<tr><td>"+database[n][0]+"</td><td>"+database[n][1]+"</td><td>$"+database[n][2].toFixed(2)+"</td><td>$"+database[n][3].toFixed(2)+"</td><td>"+database[n][4].toFixed(1)+"%</td></tr>");
-                }
-                $('#allData').append("<tr><td></td><td></td><th>TOTAL:</th><th>$"+totalValue.toFixed(2)+"</th><th>100%</th></tr>");
-            }
-
-
-	 		// ################################################
-	 		// PORTFOLIO INPUT FROM CSV FILE
-
-		    // add file upload event listener
-		    document.getElementById('csvFileUpload').addEventListener('change', upload, false);
-		 
-		    // check that the browser supports the HTML5 file API
-		    function browserSupportsFileUpload() {
-		        var isCompatible = false;
-		        if (window.File && window.FileReader && window.FileList && window.Blob) {
-			        isCompatible = true;
-		        }
-		        return isCompatible;
-		    }
-		 
-		    // process the selected file
-		    function upload(evt) {
-				$('#man_symbol').val("");
-				$('#man_qty').val("");
-			    if (!browserSupportsFileUpload()) {
-			        alert('The File APIs are not fully supported in this browser!');
-		        } else {
-		            var data = null;
-		            var file = evt.target.files[0];
-		            var reader = new FileReader();
-		            reader.readAsText(file);
-		            reader.onload = function(event) {
-		                var csvData = event.target.result;
-		                data = $.csv.toArrays(csvData);
-		                if (data && data.length > 0) {
-		                    //console.log('Imported -' + data.length + '- rows successfully!');
-		                    var newSymbols = parseFileDataForPositionData(data);
-		                    updatePortfolioHoldings(newSymbols);
-		                    updatePortfolioValue();
-		                    updatePortfolioView();
-		                } else {
-		                    alert('No data to import!');
-		                }
-		            };
-		            reader.onerror = function() {
-		                alert('Unable to read ' + file.fileName);
-		            };
-		        }
-		    }
-
-		    // extract the position data from the file
-		    function parseFileDataForPositionData(fileData) {
-		    	var matchResults = [];
-		    	var foundFirstSymbol = false;
-		    	var thisIsFirstSymbol = false;
-		    	var anotherValidSymbol = false;
-		    	var qtyColumn = 0;
-		    	var match = false;
-		    	for (var i=0; i<fileData.length; i++) 
-		    	{
-		    		match = fileData[i][0].trim().toUpperCase().match(/^[A-Z]/);
-		    		if (match != null) 
-		    		{
-			    		if (fileData[i][0].trim() == "Symbol") {
-			    			thisIsFirstSymbol = true;
-			    			foundFirstSymbol = true;
-			    			for (var q=0; q<fileData[i].length-1; q++) {
-			    				if (fileData[i][q].trim().toUpperCase() == "QTY") {
-			    					qtyColumn = q;
-			    					break;
-			    				}
-			    			}
-			    		}
-			    		else if (foundFirstSymbol == true) 
-			    		{	
-			    			symbolToAdd = [];
-				    		if (thisIsFirstSymbol == true) {
-				    			thisIsFirstSymbol = false;
-				    			matchResults.push(new Array(fileData[i][0], fileData[i][q]));
-				    		}
-				    		else {
-				    			anotherValidSymbol = true;
-				    			for (var j=0; j<fileData[i].length-1; j++) {
-				    				if (fileData[i][j].length == 0) {
-				    					anotherValidSymbol = false;
-				    					break;
-				    				}
-				    			}
-				    			if (anotherValidSymbol == true) {
-					    			matchResults.push(new Array(fileData[i][0], fileData[i][q]));
-								}
-				    		}
-				    	}
-					}
-		    	}
-		    	return matchResults;
-		    }
-
-
-	 		// ################################################
-	 		// PORTFOLIO INPUT MANUALLY
-
-            $('form').submit(function(){
-            	manualInput = [];
-				manualInput.push(Array($('#man_symbol').val().toUpperCase(), $('#man_qty').val()));
-				updatePortfolioHoldings(manualInput);
-                updatePortfolioValue();
-                updatePortfolioView();
-                return false;
-            });
-
-		});
-	</script>
 
 	<style>
 
@@ -232,70 +41,17 @@
 
 </head>
 <body>
-	<div id="dvImportSegments" class="fileupload ">
-	    <fieldset>
-	        <legend>Upload your CSV file</legend>
-	            <input type="file" name="File Upload" id="csvFileUpload" accept=".csv" />
-	   	</fieldset>
-	    <fieldset>
-	        <legend>Manually enter each position</legend>
-	    	<form>
-	            <label for="symbol">Symbol:</label>
-	            <input type="text" id="man_symbol" name="symbol">
-	            <label for="qty">Qty:</label>
-	            <input type="text" id="man_qty" name="qty">
-	            <input type="submit" value="add">
-	        </form>
-	   	</fieldset>
-	</div>
-	<table>
-		<thead>
-			<tr>
-				<th>Symbol</th>
-				<th>Qty</th>
-				<th>Quote</th>
-				<th>Value</th>
-				<th>ValuePct</th>
-			</tr>
-		</thead>
-		<tbody id="allData">
-		</tbody>
-	</table>
 
-
-	<form id="visualize">
-	  <label><input type="radio" name="mode" value="grouped"> Grouped</label>
-	  <label><input type="radio" name="mode" value="stacked" checked> Stacked</label>
-	</form>
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js"></script>
+
 	<script>
 
-	// Name	Symbol	Qty	Quote	Value	ValuePct	Performance
-	// W.R. Berkley Corporation Common	WRB	250	$56.26	$14065.00	36%	0.1128
-	// Walt Disney Company (The) Commo	DIS	50	$116.44	$5822.00	15%	0.1039
-	// Bristol-Myers Squibb Company Co	BMY	82	$69.27	$5680.14	14%	0.0781
-	// The Blackstone Group L.P. Commo	BX	125	$39.61	$4951.25	12%	0.0109
-	// Allied World Assurance Company	AWH	100.584	$44.6	$4486.05	11%	0.08689999999999999
-	// Dollar General Corporation Comm	DG	45	$79.47	$3576.15	9%	0.0843
-	// TOTAL:	$38580.59	100%
-
-	// WRB 0.36 0.1128
-	// DIS 0.15 0.1039
-	// AWH 0.11 0.08689999999999999
-	// DG 0.09	0.0843
-	// BMY 0.14 0.0781
-	// BX 0.12	0.0109
-
-	//HISTORICAL adjClose: 2015-07-10 2014-07-15, 2013-07-15, 2012-07-15
-	// WRB 56.259998 44.75884 42.425345 36.445827
-	// DIS 116.440002 84.576877 63.936757 45.711112
-	// AWH 44.599998 38.795824 30.961047 24.957332
-	// DG 79.470001 55.619421 53.650768 54.297044
-	// BMY 69.269997 47.526666 42.80052 32.369561
-	// BX 39.610001 31.064205 19.683575 10.798957
-
-
+// console.log($scope.positions);
+	// var portfolio = positions
 	// HARDCODE SOME HISTORICAL DATA
+
+	// var tickers = [ "WRB", "DIS", "AWH", "DG", "BMY", "BX" ];
+	// var 
 
 	var portfolio = [], holding;
 	portfolio.push({symbol: "WRB", valuePct: 0.36, historicalQuotes: new Array (56.259998, 44.75884, 42.425345, 36.445827)});
@@ -380,9 +136,9 @@
 
 	for (holding in portfolio) {
 		samples = [];
-		samples.push({symbol:portfolio[holding].symbol, x:0, y:portfolio[holding].valuePct, y0:y0_1yr[holding]});
-		samples.push({symbol:portfolio[holding].symbol, x:1, y:portfolio[holding].valuePct, y0:y0_2yr[holding]});
-		samples.push({symbol:portfolio[holding].symbol, x:2, y:portfolio[holding].valuePct, y0:y0_3yr[holding]});
+		samples.push({symbol:portfolio[holding].symbol, x:0, y:portfolio[holding].valuePct, y0:y0_1yr[holding], xLabel:"1yr"});
+		samples.push({symbol:portfolio[holding].symbol, x:1, y:portfolio[holding].valuePct, y0:y0_2yr[holding], xLabel:"2yr"});
+		samples.push({symbol:portfolio[holding].symbol, x:2, y:portfolio[holding].valuePct, y0:y0_3yr[holding], xLabel:"3yr"});
 		portfolio_tuples.push(samples);
 	}
 
@@ -391,6 +147,7 @@
 
 	var n = 6, // number of symbols
 	    m = 3, // number of samples per symbol
+	    m_string = ["1-year","2-year","3-year"],
 	    // stack = d3.layout.stack(),
 	    // symbols = stack(d3.range(n).map(function() { return bumpLayer(m, .1); })),
 	    stack = d3.layout.stack()
@@ -415,12 +172,13 @@
 	// console.log("yGroupMax = "+yGroupMax);
 	// console.log("yStackMax = "+yStackMax);
 
-	var margin = {top: 40, right: 10, bottom: 20, left: 10},
+	var margin = {top: 40, right: 10, bottom: 60, left: 10},
 	    width = 960 - margin.left - margin.right,
 	    height = 500 - margin.top - margin.bottom;
 
 	var x = d3.scale.ordinal()
-	    .domain(d3.range(m))
+	    .domain(d3.range(m))                // 0,1,2
+	    // .domain(symbols.map(function(d) {return d.xLabel;}))                // 0,1,2
 	    .rangeRoundBands([0, width], .08);
 
 	var y = d3.scale.linear()
@@ -429,19 +187,26 @@
 
 	var color = d3.scale.linear()
 	    .domain([0, n - 1])
-	    .range(["#aad", "#556"]);
+	    .range(["#476A34", "#93DB70"]);
 
-	var xAxis = d3.svg.axis()
-	    .scale(x)
+	var xAxis = d3.svg.axis()   // (1) create generic axis function
+	    .scale(x)				// (2) define the scale to operate on
 	    .tickSize(0)
 	    .tickPadding(6)
-	    .orient("bottom");
+	    .tickFormat(function(i) { return m_string[i]; })
+	    .orient("bottom");		// (3) where labels appear relative to axis
 
 	var svg = d3.select("body").append("svg")
 	    .attr("width", width + margin.left + margin.right)
 	    .attr("height", height + margin.top + margin.bottom)
 	  .append("g")
 	    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+	svg.append("text")
+		.attr("x", width/2)
+		.attr("y", height+(margin.bottom)*0.5)
+		.style("text-anchor", "middle")
+		.text("PERFORMANCE");
 
 	var layer = svg.selectAll(".layer")
 	    .data(symbols)
@@ -456,18 +221,15 @@
 	    .attr("y", height)
 	    .attr("width", x.rangeBand())
 	    .attr("height", 0);
+	    // .style("fill", function(d, i) { return color(i); });
 
-	// svg.selectAll("text")
-	// 	.data(symbols)
-	// 	.enter()
-	// 	.append("text")
-	// 	.text("foo")
-
-	// 	// .text(function(d,i) { return y(d.y) })
-	// 	.attr("x", function(d,i) { return i * (width / (m*n)) + 6; })
-	// 	// .attr("x", function(d,i) { return i * d.x; })
-	// 	.attr("y", function(d) { return height; });
-
+	var text = layer.selectAll("text")
+	    .data(function(d) { return d; })
+	  .enter().append("text")
+	    .attr("x", function(d) { return x(d.x) - 15; })
+	    .attr("y", function(d) { return y(d.y0 + d.y/2); })
+	    .text(function(d) { return d.symbol })
+	    .style("fill", "#000");
 
 	rect.transition()
 	    .delay(function(d, i) { return i * 10; })
@@ -477,57 +239,9 @@
 	svg.append("g")
 	    .attr("class", "x axis")
 	    .attr("transform", "translate(0," + height + ")")
-	    .call(xAxis);
+	    .call(xAxis);										// (4) generate the SVG of the axis itself
 
-	d3.selectAll("input").on("change", change);
-
-	var timeout = setTimeout(function() {
-	  d3.select("input[value=\"grouped\"]").property("checked", true).each(change);
-	}, 2000);
-
-	function change() {
-	  clearTimeout(timeout);
-	  if (this.value === "grouped") transitionGrouped();
-	  else transitionStacked();
-	}
-
-	function transitionGrouped() {
-	  y.domain([0, yGroupMax]);
-
-	  rect.transition()
-	      .duration(500)
-	      .delay(function(d, i) { return i * 10; })
-	      .attr("x", function(d, i, j) { return x(d.x) + x.rangeBand() / n * j; })
-	      .attr("width", x.rangeBand() / n)
-	    .transition()
-	      .attr("y", function(d) { return y(d.y); })
-	      .attr("height", function(d) { return height - y(d.y); });
-	}
-
-	function transitionStacked() {
-	  y.domain([0, yStackMax]);
-
-	  rect.transition()
-	      .duration(500)
-	      .delay(function(d, i) { return i * 10; })
-	      .attr("y", function(d) { return y(d.y0 + d.y); })
-	      .attr("height", function(d) { return y(d.y0) - y(d.y0 + d.y); })
-	    .transition()
-	      .attr("x", function(d) { return x(d.x); })
-	      .attr("width", x.rangeBand());
-	}
-
-	// modified bumpLayer() function
-	// function bumpLayer(n, o) {
-
-	//   var a = [], i;
-	//   	  for (i = 0; i < n; ++i) a[i] = Math.floor(Math.random()*5);
-
-	//   return a.map(function(d, i) { return {x: i, y: Math.max(0, d)}; });
-	// }
-
-	</script>
-
+</script>
 
 </body>
 </html>
