@@ -1,8 +1,58 @@
 my_app.factory('DataFactory', function($http) {
 
     var factory = {};
-    positions = [];
+    // positions = [];
     totalValue = 0;
+
+// ################################## SEED SOME INITIAL DATA ON PAGE LOAD ##################################
+
+    // HARDCODE SOME HISTORICAL DATA
+
+    var positions = [];
+    // positions.push({symbol: "WRB", valuePct: 0.36, historicalQuotes: new Array (56.259998, 44.75884, 42.425345, 36.445827)});
+    // positions.push({symbol: "DIS", valuePct: 0.15, historicalQuotes: new Array (116.440002, 84.576877, 63.936757, 45.711112)});
+    // positions.push({symbol: "AWH", valuePct: 0.11, historicalQuotes: new Array (44.599998, 38.795824, 30.961047, 24.957332)});
+    // positions.push({symbol: "DG", valuePct: 0.09, historicalQuotes: new Array (79.470001, 55.619421, 53.650768, 54.297044)});
+    // positions.push({symbol: "BMY", valuePct: 0.14, historicalQuotes: new Array (69.269997, 47.526666, 42.80052, 32.369561)});
+    // positions.push({symbol: "BX", valuePct: 0.12, historicalQuotes: new Array (39.610001, 31.064205, 19.683575, 10.798957)});
+
+    // updateHistoricalGainsForAllPositions();
+
+    var y0_1yr=[], y0_2yr=[], y0_3yr=[];
+
+    for (var holding in positions) {
+        y0_1yr.push(0);
+        y0_2yr.push(0);
+        y0_3yr.push(0);
+    }
+    for (holding in positions) {
+        for (var otherHolding in positions) {
+            if (holding != otherHolding) {
+                if (positions[holding].historicalGain[1] > positions[otherHolding].historicalGain[1]) {
+                    y0_1yr[holding] += positions[otherHolding].valuePct;
+                }
+                if (positions[holding].historicalGain[2] > positions[otherHolding].historicalGain[2]) {
+                    y0_2yr[holding] += positions[otherHolding].valuePct;
+                }
+                if (positions[holding].historicalGain[3] > positions[otherHolding].historicalGain[3]) {
+                    y0_3yr[holding] += positions[otherHolding].valuePct;
+                }
+            }
+        }
+    }
+
+    var portfolio_tuples = [], holding_samples = [];
+
+    for (holding in positions) {
+        samples = [];
+        samples.push({symbol:positions[holding].symbol, x:0, y:positions[holding].valuePct, y0:y0_1yr[holding], y0_gain:positions[holding].historicalGain[1]});
+        samples.push({symbol:positions[holding].symbol, x:1, y:positions[holding].valuePct, y0:y0_2yr[holding], y0_gain:positions[holding].historicalGain[2]});
+        samples.push({symbol:positions[holding].symbol, x:2, y:positions[holding].valuePct, y0:y0_3yr[holding], y0_gain:positions[holding].historicalGain[3]});
+        portfolio_tuples.push(samples);
+    }
+
+// ################################## SEED SOME INITIAL DATA ON PAGE LOAD ##################################
+
 
     function updateQuote (positionIndex) {
 
@@ -40,8 +90,8 @@ my_app.factory('DataFactory', function($http) {
                 }
                 else {
                     console.log("QUO-H [DataFactory.updateQuote()] success, returning date"+output.dateIdx+"@"+output.adjClose);
-
                     positions[positionIndex].historicalQuotes[output.dateIdx] = output.adjClose.toFixed(2);
+                    updateHistoricalGainsForAllPositions();
                     // FIXME: historical gains is broken because baseline isn't resolved at client before historical quote is sent
                     // positions[positionIndex].historicalGains[output.dateIdx] = (((output.adjClose - output.baseline) / output.baseline) * 100).toFixed(1);
                     // console.log("baseline = "+output.baseline+" historical gain "+output.dateIdx+" = "+positions[positionIndex].historicalGains[output.dateIdx]);
@@ -74,6 +124,7 @@ my_app.factory('DataFactory', function($http) {
     }
 
     function updateValuesForAllPositions () {
+
     	if (positions.length == 0) {
 	    	updateTotalValue();
     	}
@@ -86,6 +137,25 @@ my_app.factory('DataFactory', function($http) {
 		    	positions[p].valuePct = parseInt(((parseFloat(positions[p].value) / totalValue) * 100).toFixed(1));
 		    }
 		}
+    }
+
+    function updateHistoricalGainsForAllPositions () {
+
+        if (positions.length != 0) {
+            for (holding in positions) {
+                var historicalGain = [];
+                historicalGain.push(0);
+                for (var t=1; t<positions[holding].historicalQuotes.length; t++) {
+                    if (positions[holding].historicalQuotes[0] == 0) {
+                        historicalGain.push(0);
+                    }
+                    else {
+                        historicalGain.push((positions[holding].historicalQuotes[0] - positions[holding].historicalQuotes[t]) / positions[holding].historicalQuotes[0]);
+                    }
+                }
+                positions[holding].historicalGain = historicalGain;
+            }
+        }
     }
 
     // check that the browser supports the HTML5 file API
@@ -292,47 +362,46 @@ my_app.controller('DashboardController', function($scope, DataFactory) {
 
     // HARDCODE SOME HISTORICAL DATA
 
-    var portfolio = [], holding;
-    portfolio.push({symbol: "WRB", valuePct: 0.36, historicalQuotes: new Array (56.259998, 44.75884, 42.425345, 36.445827)});
-    portfolio.push({symbol: "DIS", valuePct: 0.15, historicalQuotes: new Array (116.440002, 84.576877, 63.936757, 45.711112)});
-    portfolio.push({symbol: "AWH", valuePct: 0.11, historicalQuotes: new Array (44.599998, 38.795824, 30.961047, 24.957332)});
-    portfolio.push({symbol: "DG", valuePct: 0.09, historicalQuotes: new Array (79.470001, 55.619421, 53.650768, 54.297044)});
-    portfolio.push({symbol: "BMY", valuePct: 0.14, historicalQuotes: new Array (69.269997, 47.526666, 42.80052, 32.369561)});
-    portfolio.push({symbol: "BX", valuePct: 0.12, historicalQuotes: new Array (39.610001, 31.064205, 19.683575, 10.798957)});
+    // var portfolio = [], holding;
+    // portfolio.push({symbol: "WRB", valuePct: 0.36, historicalQuotes: new Array (56.259998, 44.75884, 42.425345, 36.445827)});
+    // portfolio.push({symbol: "DIS", valuePct: 0.15, historicalQuotes: new Array (116.440002, 84.576877, 63.936757, 45.711112)});
+    // portfolio.push({symbol: "AWH", valuePct: 0.11, historicalQuotes: new Array (44.599998, 38.795824, 30.961047, 24.957332)});
+    // portfolio.push({symbol: "DG", valuePct: 0.09, historicalQuotes: new Array (79.470001, 55.619421, 53.650768, 54.297044)});
+    // portfolio.push({symbol: "BMY", valuePct: 0.14, historicalQuotes: new Array (69.269997, 47.526666, 42.80052, 32.369561)});
+    // portfolio.push({symbol: "BX", valuePct: 0.12, historicalQuotes: new Array (39.610001, 31.064205, 19.683575, 10.798957)});
 
 
     // FROM THESE, CALCULATE THE HISTORICAL GAINS
 
-    for (holding in portfolio) {
-        var historicalGain = [];
-        historicalGain.push(0);
-        for (var t=1; t<portfolio[holding].historicalQuotes.length; t++) {
-            historicalGain.push((portfolio[holding].historicalQuotes[0] - portfolio[holding].historicalQuotes[t]) / portfolio[holding].historicalQuotes[0]);
-        }
-        portfolio[holding].historicalGain = historicalGain;
-    }
+    // for (holding in portfolio) {
+    //     var historicalGain = [];
+    //     historicalGain.push(0);
+    //     for (var t=1; t<portfolio[holding].historicalQuotes.length; t++) {
+    //         historicalGain.push((portfolio[holding].historicalQuotes[0] - portfolio[holding].historicalQuotes[t]) / portfolio[holding].historicalQuotes[0]);
+    //     }
+    //     portfolio[holding].historicalGain = historicalGain;
+    // }
 
     // CONVERT THE DATA INTO AN (x,y,y0) TUPLE
 
     var y0_1yr=[], y0_2yr=[], y0_3yr=[];
 
-    for (holding in portfolio) {
+    for (var holding in $scope.positions) {
         y0_1yr.push(0);
         y0_2yr.push(0);
         y0_3yr.push(0);
     }
-
-    for (holding in portfolio) {
-        for (var otherHolding in portfolio) {
+    for (holding in $scope.positions) {
+        for (var otherHolding in $scope.positions) {
             if (holding != otherHolding) {
-                if (portfolio[holding].historicalGain[1] > portfolio[otherHolding].historicalGain[1]) {
-                    y0_1yr[holding] += portfolio[otherHolding].valuePct;
+                if ($scope.positions[holding].historicalGain[1] > $scope.positions[otherHolding].historicalGain[1]) {
+                    y0_1yr[holding] += $scope.positions[otherHolding].valuePct;
                 }
-                if (portfolio[holding].historicalGain[2] > portfolio[otherHolding].historicalGain[2]) {
-                    y0_2yr[holding] += portfolio[otherHolding].valuePct;
+                if ($scope.positions[holding].historicalGain[2] > $scope.positions[otherHolding].historicalGain[2]) {
+                    y0_2yr[holding] += $scope.positions[otherHolding].valuePct;
                 }
-                if (portfolio[holding].historicalGain[3] > portfolio[otherHolding].historicalGain[3]) {
-                    y0_3yr[holding] += portfolio[otherHolding].valuePct;
+                if ($scope.positions[holding].historicalGain[3] > $scope.positions[otherHolding].historicalGain[3]) {
+                    y0_3yr[holding] += $scope.positions[otherHolding].valuePct;
                 }
             }
         }
@@ -340,18 +409,50 @@ my_app.controller('DashboardController', function($scope, DataFactory) {
 
     var portfolio_tuples = [], holding_samples = [];
 
-    for (holding in portfolio) {
+    for (holding in $scope.positions) {
         samples = [];
-        samples.push({symbol:portfolio[holding].symbol, x:0, y:portfolio[holding].valuePct, y0:y0_1yr[holding], y0_gain:portfolio[holding].historicalGain[1]});
-        samples.push({symbol:portfolio[holding].symbol, x:1, y:portfolio[holding].valuePct, y0:y0_2yr[holding], y0_gain:portfolio[holding].historicalGain[2]});
-        samples.push({symbol:portfolio[holding].symbol, x:2, y:portfolio[holding].valuePct, y0:y0_3yr[holding], y0_gain:portfolio[holding].historicalGain[3]});
+        samples.push({symbol:$scope.positions[holding].symbol, x:0, y:$scope.positions[holding].valuePct, y0:y0_1yr[holding], y0_gain:$scope.positions[holding].historicalGain[1]});
+        samples.push({symbol:$scope.positions[holding].symbol, x:1, y:$scope.positions[holding].valuePct, y0:y0_2yr[holding], y0_gain:$scope.positions[holding].historicalGain[2]});
+        samples.push({symbol:$scope.positions[holding].symbol, x:2, y:$scope.positions[holding].valuePct, y0:y0_3yr[holding], y0_gain:$scope.positions[holding].historicalGain[3]});
         portfolio_tuples.push(samples);
     }
+
+    // for (holding in portfolio) {
+    //     y0_1yr.push(0);
+    //     y0_2yr.push(0);
+    //     y0_3yr.push(0);
+    // }
+    // for (holding in portfolio) {
+    //     for (var otherHolding in portfolio) {
+    //         if (holding != otherHolding) {
+    //             if (portfolio[holding].historicalGain[1] > portfolio[otherHolding].historicalGain[1]) {
+    //                 y0_1yr[holding] += portfolio[otherHolding].valuePct;
+    //             }
+    //             if (portfolio[holding].historicalGain[2] > portfolio[otherHolding].historicalGain[2]) {
+    //                 y0_2yr[holding] += portfolio[otherHolding].valuePct;
+    //             }
+    //             if (portfolio[holding].historicalGain[3] > portfolio[otherHolding].historicalGain[3]) {
+    //                 y0_3yr[holding] += portfolio[otherHolding].valuePct;
+    //             }
+    //         }
+    //     }
+    // }
+
+    // var portfolio_tuples = [], holding_samples = [];
+
+    // for (holding in portfolio) {
+    //     samples = [];
+    //     samples.push({symbol:portfolio[holding].symbol, x:0, y:portfolio[holding].valuePct, y0:y0_1yr[holding], y0_gain:portfolio[holding].historicalGain[1]});
+    //     samples.push({symbol:portfolio[holding].symbol, x:1, y:portfolio[holding].valuePct, y0:y0_2yr[holding], y0_gain:portfolio[holding].historicalGain[2]});
+    //     samples.push({symbol:portfolio[holding].symbol, x:2, y:portfolio[holding].valuePct, y0:y0_3yr[holding], y0_gain:portfolio[holding].historicalGain[3]});
+    //     portfolio_tuples.push(samples);
+    // }
 
 
     // RUN THE VISUALIZATION d3.layout.stack()
 
-    var n = 6, // number of symbols
+    var n = $scope.positions.length, // number of symbols
+    // var n = 6, // number of symbols
         m = 3, // number of samples per symbol
         m_string = ["1-year","2-year","3-year"],
         // stack = d3.layout.stack(),
@@ -401,7 +502,7 @@ my_app.controller('DashboardController', function($scope, DataFactory) {
         .tickFormat(function(i) { return m_string[i]; })
         .orient("bottom");      // (3) where labels appear relative to axis
 
-    var svg = d3.select("body").append("svg")
+    var svg = d3.select("#d3plot").append("svg")
         .attr("width", width + margin.left + margin.right)
         .attr("height", height + margin.top + margin.bottom)
       .append("g")
@@ -456,6 +557,25 @@ my_app.controller('DashboardController', function($scope, DataFactory) {
         .style("text-decoration", "underline")
         .text("Weighted Performance vs Time Intervals");
 
+    d3.selectAll("input").on("change", change);
+
+    function change() {
+        // clearTimeout(timeout);
+        console.log("CHANGE!!");
+        transitionStacked();
+    }
+
+    function transitionStacked() {
+        y.domain([0, yStackMax]);
+        rect.transition()
+            .duration(500)
+            .delay(function(d, i) { return i * 10; })
+            .attr("y", function(d) { return y(d.y0 + d.y); })
+            .attr("height", function(d) { return y(d.y0) - y(d.y0 + d.y); })
+          .transition()
+            .attr("x", function(d) { return x(d.x); })
+            .attr("width", x.rangeBand());
+    }
 
 
 // end D3 plot
