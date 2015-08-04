@@ -1,13 +1,27 @@
 <div ng-controller="DashboardController">	
 	<div id="dvImportSegments" class="fileupload ">
 
-<!-- 	    <fieldset>
+ 	    <fieldset>
 	        <legend>Upload your CSV file</legend>
-	    	<form>
-	            <input type="text" id="file" name="file" value="foo" ng-model="newFilePositions.file">
-				<input type="submit" value="add positions" ng-click="addPositionViaFile()"></input>
-	    	</form>
-	   	</fieldset> -->
+	        <form>
+	<!--         	<div class="row">
+	        		<div class="four columns">
+			            <input class="button-primary" type="text" name="text" id="text" ng-model="newPositionsFile.text"/>
+			        </div>
+			    </div> -->
+	        	<div class="row">
+	        		<div class="four columns">
+			            <input class="button-primary" type="file" name="File Upload" id="csvFileUpload" accept=".csv" fileread="newPositionsFile.uploadme"/>
+			        </div>
+			    </div>
+		        <div class="row">
+		        	<div class="two columns">
+		        		<!-- <input type="hidden" id="foo" name="fooname" value="foovalue" ng-model="newPositionsFile.foo"> -->
+			            <input class="button-primary" type="submit" value="upload position(s)" ng-click="addPositionsViaFile()"</input>
+	            	</div>
+	            </div>
+	        </form>
+	   	</fieldset>
 
 	    <fieldset>
 	        <legend>Manually enter each position</legend>

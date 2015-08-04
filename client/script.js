@@ -9,6 +9,7 @@ my_app.factory('DataFactory', function($http) {
     // HARDCODE SOME HISTORICAL DATA
 
     var positions = [];
+    var newPositions = [];
     // positions.push({symbol: "WRB", valuePct: 0.36, historicalQuotes: new Array (56.259998, 44.75884, 42.425345, 36.445827)});
     // positions.push({symbol: "DIS", valuePct: 0.15, historicalQuotes: new Array (116.440002, 84.576877, 63.936757, 45.711112)});
     // positions.push({symbol: "AWH", valuePct: 0.11, historicalQuotes: new Array (44.599998, 38.795824, 30.961047, 24.957332)});
@@ -168,15 +169,11 @@ my_app.factory('DataFactory', function($http) {
     }
  
     // process the selected file
-    // function upload(evt) {
     function upload(file) {
-        // $('#man_symbol').val("");
-        // $('#man_qty').val("");
         if (!browserSupportsFileUpload()) {
             alert('The File APIs are not fully supported in this browser!');
         } else {
             var data = null;
-            // var file = evt.target.files[0];
             var reader = new FileReader();
             reader.readAsText(file);
             reader.onload = function(event) {
@@ -185,10 +182,13 @@ my_app.factory('DataFactory', function($http) {
                 if (data && data.length > 0) {
                     //console.log('Imported -' + data.length + '- rows successfully!');
                     var newSymbols = parseFileDataForPositionData(data);
-                    console.log(newSymbols);
-                    // updatePortfolioHoldings(newSymbols);
-                    // updatePortfolioValue();
-                    // updatePortfolioView();
+                    newPositions = [];
+                    console.log("orig length: ",newPositions.length);
+                    newPositions.push(newSymbols);
+                    console.log("new length:  ",newPositions.length);
+                    // console.log("upload() newSymbols: ",newSymbols);
+                    console.log("upload() returning newSymbolsFromFile: ",newSymbols);
+                    return newSymbols;
                 } else {
                     alert('No data to import!');
                 }
@@ -197,11 +197,13 @@ my_app.factory('DataFactory', function($http) {
                 alert('Unable to read ' + file.fileName);
             };
         }
+        return
     }
 
     // extract the position data from the file
     function parseFileDataForPositionData(fileData) {
         var matchResults = [];
+        var matchResults2 = [];
         var foundFirstSymbol = false;
         var thisIsFirstSymbol = false;
         var anotherValidSymbol = false;
@@ -228,6 +230,7 @@ my_app.factory('DataFactory', function($http) {
                     if (thisIsFirstSymbol == true) {
                         thisIsFirstSymbol = false;
                         matchResults.push(new Array(fileData[i][0], fileData[i][q]));
+                        matchResults2.push({symbol: fileData[i][0], qty: fileData[i][q]});
                     }
                     else {
                         anotherValidSymbol = true;
@@ -239,12 +242,15 @@ my_app.factory('DataFactory', function($http) {
                         }
                         if (anotherValidSymbol == true) {
                             matchResults.push(new Array(fileData[i][0], fileData[i][q]));
+                            matchResults2.push({symbol: fileData[i][0], qty: fileData[i][q]});
                         }
                     }
                 }
             }
         }
-        return matchResults;
+        // console.log("matchResults: ",matchResults);
+        // console.log("FIXME: parseFileDataForPositionData() returning [0] only: ",matchResults2[0]);
+        return matchResults2[0];
     }
 
     factory.getTotalValue = function() {
@@ -257,20 +263,25 @@ my_app.factory('DataFactory', function($http) {
 
     factory.addPositionsFromFile = function(info, callback) {
 
-        console.log("ADD-M [DataFactory.addPositionsFromFile()] added position(s)");
+        console.log("ADD-M [DataFactory.addPositionsFromFile()] file to upload: ",info.uploadme.name);
+        // var newPositions = upload(info.uploadme);
+        var newSymbolsFromFile = upload(info.uploadme);
+        console.log("received newSymbolsFromFile: ",newSymbolsFromFile);
+        console.log("new length2: ",newPositions.length);
 
-        // info.file
-        console.log(info);
-        // upload(info.file);
-
-
-
-
-        // info.symbol = info.symbol.toUpperCase();
-
-
-        console.log("ADD-M [DataFactory.addPositionsFromFile()] added position(s)");
+        console.log("===== NEW POSITIONS =====")
+        for (var i=0; i<newPositions.length; i++) {
+            console.log(newPositions[i]);
+        }
+        console.log("===== POSITIONS =====")
+        for (var j=0; j<newPositions.length; j++) {
+            console.log(positions[j]);
+        }
+        positions.push(newPositions);
         callback(positions);
+        // console.log("ADD-M [DataFactory.addPositionsFromFile()] data extracted: ",newPositions);
+        // this.addPosition(newPositions, callback(positions));
+
     };
 
     factory.addPosition = function(info, callback) {
@@ -325,16 +336,17 @@ my_app.controller('DashboardController', function($scope, DataFactory) {
     // // add file upload event listener
     // document.getElementById('csvFileUpload').addEventListener('change', upload, false);
  
-    $scope.addPositionViaFile = function() {
+    $scope.addPositionsViaFile = function() {
 
         console.log("<<< ADD POSITION(S) VIA FILE CLICK >>>");
 
-        console.log("ADD-M [DashboardController.addPositionViaFile()] need to add position(s): "+$scope.newFilePositions);
-        // DataFactory.addPositionsFromFile($scope.newFilePositions, function(factoryPositions) {
-        //     console.log("ADD-M [DashboardController.addPositionViaFile()] success");
-        //     $scope.positions = factoryPositions;
-        //     $scope.newFilePositions = {};
-        // });
+        console.log("ADD [DashboardController.addPositionViaFile()] need to add positions ",$scope.newPositionsFile);
+        DataFactory.addPositionsFromFile($scope.newPositionsFile, function(factoryPositions) {
+            console.log("ADD-M [DashboardController.addPositionsViaFile()] success");
+            $scope.positions = factoryPositions;
+            $scope.newPositionsFile = {};
+        });
+
     };
 
 
@@ -345,7 +357,7 @@ my_app.controller('DashboardController', function($scope, DataFactory) {
 
 	    console.log("<<< ADD POSITION MANUALLY CLICK >>>");
 
-	    console.log("ADD [DashboardController.addPositionManually()] need to add position",$scope.newManualPosition);
+	    console.log("ADD [DashboardController.addPositionManually()] need to add position ",$scope.newManualPosition);
         DataFactory.addPosition($scope.newManualPosition, function(factoryPositions) {
             console.log("ADD [DashboardController.addPositionManually()] success");
             $scope.positions = factoryPositions;
@@ -585,7 +597,52 @@ my_app.controller('DashboardController', function($scope, DataFactory) {
 
 
 
-});
+//});
+
+
+}).directive("fileread", [function () {
+    return {
+        scope: {
+            fileread: "="
+        },
+        link: function (scope, element, attributes) {
+            element.bind("change", function (changeEvent) {
+                scope.$apply(function () {
+                    scope.fileread = changeEvent.target.files[0];
+                    // or all selected files:
+                    // scope.fileread = changeEvent.target.files;
+                });
+            });
+        }
+    }
+}]);
+
+
+
+
+// }).directive("fileread", [function () {
+//     return {
+//         scope: {
+//             fileread: "="
+//         },
+//         link: function (scope, element, attributes) {
+//             element.bind("change", function (changeEvent) {
+//                 var reader = new FileReader();
+//                 reader.onload = function (loadEvent) {
+//                     scope.$apply(function () {
+//                         scope.fileread = loadEvent.target.result;
+//                     });
+//                 }
+//                 reader.readAsDataURL(changeEvent.target.files[0]);
+//             });
+//         }
+//     }
+// }]);
+
+
+
+
+
 
 
 
